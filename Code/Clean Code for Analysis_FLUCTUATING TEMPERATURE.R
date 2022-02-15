@@ -1,10 +1,6 @@
-######Fluctuating temperature analysis####
+######Fluctuating temperature analysis######
 ###Wolfe, Cerini, O'Brien, Besson, Clements 2022###
 rm(list=ls(all=TRUE))
-
-
-## HELLO FRANCESCO ##
-
 
 ####load required packages####
 library(tidyverse) 
@@ -25,8 +21,10 @@ library(lmtest)
 library(sjmisc)
 library(splines)
 library(DHARMa)
-#####duncan is cool
 
+########################################################################################
+## DATA LOADING AND PREPARATION ##
+########################################################################################
 
 ###set working directory and load data
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -35,6 +33,8 @@ data<-read.xlsx("ExpTempFluctuationsV2_Data_FINAL.xlsx",
                 colNames = T, sheet = "Foglio1", detectDates = T)
 ###put na as zeros
 data[is.na(data)] <- 0
+
+###group the data and select variables we are interested in
 dataG<-data%>%
   group_by(Temp_Regime, Replicate, Date, Patch, Corridor) %>% 
   dplyr::select(Date, Observer, Replicate, Temp_Regime, Corridor,Patch, Total_Blepharisma,
@@ -43,13 +43,13 @@ dataG<-data%>%
 
 
 ###combine data of the two patches 
-colnames((dataG))
 data_sum_patch<-dataG %>% group_by(Date,Replicate,Temp_Regime,Corridor, Observer) %>%
   dplyr::summarise_at(.vars = c("Total_Blepharisma", "Total_Didinium", "Total_Colpidium" ,
                          "Total_Homolazoon","Total_Bursaria", "Total_Spirostomum",
                          "Total_Paramecium" ), .funs = c(sum ="sum"))
 
-####calculating Shannon diversity index and add a measure of Eveness and Richness and a colummn with number of days
+####calculating Shannon diversity index and add a measure of Eveness and Richness 
+####and a column with number of days of the experiment
 data_Sh_div<- data_sum_patch %>% 
   dplyr::ungroup() %>% 
   mutate(Sh_div = vegan::diversity(data_sum_patch[,6:12]))
@@ -59,16 +59,19 @@ data_Sh_div<-data_Sh_div %>%
   mutate(Sp_rich = specnumber(data_sum_patch[,6:12])) %>% 
   mutate(NumDays = as.numeric(difftime(data_Sh_div$Date, data_Sh_div$Date[1], units = "days"))) 
 
-
+###set these two columns as factors for needed in the following analysis
 data_Sh_div$Corridor<-as.factor(data_Sh_div$Corridor)
 data_Sh_div$Temp_Regime<-as.factor(data_Sh_div$Temp_Regime)
 
 
-#ANALYSIS of SPECIES RICHNESS LAST DAY WITH INTERACTION Corridor*Temp_Regime##########
-###create a subdataset with just the last day of experiment
+########################################################################################
+## ANALYSIS of SPECIES RICHNESS LAST DAY WITH INTERACTION Corridor*Temp_Regime ##
+########################################################################################
+###create a sub-dataset with just the last day of experiment
 data_lastday<-data_Sh_div %>%
   filter(NumDays == 28) 
 
+###set these two columns as factors for needed in the following analysis
 data_lastday$Corridor<-as.factor(data_lastday$Corridor)
 data_lastday$Temp_Regime<-as.factor(data_lastday$Temp_Regime)
 
@@ -77,7 +80,7 @@ lm<-lm(Sp_rich~ Corridor*Temp_Regime,
        data = data_lastday)
 ggqqplot(residuals(lm))
 
-##normality of data and model
+#normality of data and model
 data_lastday %>% 
   group_by(Temp_Regime, Corridor) %>%
   shapiro_test(Sp_rich)
@@ -86,11 +89,11 @@ data_lastday %>%
 ggqqplot(data_lastday, "Sp_rich", ggtheme = theme_bw()) +
   facet_grid(Temp_Regime ~ Corridor)
 
-###Homogneity of variance test
+#Homogneity of variance test
 data_lastday %>% levene_test(Sp_rich~ Corridor*Temp_Regime)
 ####not all the subset of data are normally distributed but we are happy with the model
 
-##run the anova (with two different function, don't know chich one to keep, probably aov?)
+####Run the anova (with two different function, don't know which one to keep, probably aov?)
 summary(aov(Sp_rich~ Corridor*Temp_Regime,
             data = data_lastday))
 
@@ -98,7 +101,7 @@ anova_test(Sp_rich~ Corridor*Temp_Regime,
     data = data_lastday)
 
 
-####plotting the analysed data to see if the results makes sense
+####plotting the analysed data to see if the results match the data
 
 ggplot(data_lastday, aes( x = Temp_Regime, y = Sp_rich, col = Temp_Regime))+
   geom_boxplot()+
@@ -108,61 +111,29 @@ ggplot(data_lastday, aes( x = Temp_Regime, y = Sp_rich, col = Temp_Regime))+
 
 
 
-##### Shannon Diversity Index THE LAST DAY ACROSS THE TREATMENTS######
 
-##visualize the data to see what to expect
-##with corridors
+########################################################################################
+## Shannon Diversity Index THE LAST DAY ACROSS THE TREATMENTS##
+########################################################################################
+####visualize the data to see what to expect
+##facet corridors
 ggplot(data_lastday, aes( x = Temp_Regime, y = Sh_div, col = Temp_Regime))+
   geom_boxplot()+
   facet_grid(~Corridor)+
   ggtitle("Shannon diversity last day")+
   theme_bw()
 
-###all together
+##all together
 ggplot(data_lastday, aes( x = Temp_Regime, y = Sh_div, col = Temp_Regime))+
   geom_boxplot()+
   ggtitle("Shannon diversity last day")+
   theme_bw()
 
-
-
-##we use the normal error dist to begin with identity link
-#code the model
-mod_last_day_Sh_1_ID<-glm(Sh_div~ Corridor*Temp_Regime,
-                          data = data_lastday, family = gaussian(link = "identity"))
-##visual checking of the model
-plot(mod_last_day_Sh_1_ID)
-
-##look at the R squared to have an idea of how much variance is explained 
-rsquared(mod_last_day_Sh_1_ID)
-
-###plot the residual of the model to look at their distribution
-
-hist(resid(mod_last_day_Sh_1_ID))
-
-###we test the normality of the residuals
-shapiro.test(resid(mod_last_day_Sh_1_ID))
-##it is good! Looks like they are normal
-
-###dharma testing is also happy with it
-sim5<-simulateResiduals(mod_last_day_Sh_1_ID, n = 1000)
-plot(sim5)
-
-
-##model checking
-
-anova(mod_last_day_Sh_1_ID,test = "F")
-Anova(mod_last_day_Sh_1_ID)
-summary(mod_last_day_Sh_1_ID)
-
-##post hoc test
-summary(glht(mod_last_day_Sh_1_ID, mcp(Temp_Regime = "Tukey")))
-
-
-####doin the simple ANOVA without model
+#####checking assumptions to run the two way anova
 plot(lm(Sh_div~ Corridor*Temp_Regime,
        data = data_lastday))
 
+##normality of the data
 data_lastday %>% 
   group_by(Temp_Regime, Corridor) %>%
   shapiro_test(Sh_div)
@@ -170,25 +141,27 @@ data_lastday %>%
 ggqqplot(data_lastday, "Sh_div", ggtheme = theme_bw()) +
   facet_grid(Temp_Regime ~ Corridor)
 
+##Homogeneity of variance
 data_lastday %>% levene_test(Sh_div~ Corridor*Temp_Regime)
 
+
+
+####Run the anova
 anova_test(Sh_div~ Corridor*Temp_Regime,
            data = data_lastday)
 
+####run multiple comparison post hoc test
 data_lastday %>% pairwise_t_test(
   Sh_div ~ Temp_Regime, 
   p.adjust.method = "bonferroni"
 )
 
-dd<-data_lastday %>% 
-  group_by(Temp_Regime) %>% 
-  dplyr::summarise(sd = sd(Sh_div))
 
-
-
-#####BETA DIVERSITY BETWEEN THE TWO PATCHES ACROSS CORRIDOR AND TREATMENTS at the end of the experiment####
-
-#####BETA DIVERSITY CALCULATION#################
+########################################################################################
+##ANALYSIS OF BETA DIVERSITY BETWEEN THE TWO PATCHES at the end of the experiment##
+########################################################################################
+####Calculating Beta Diversity
+##Create a new dataset with jsut the data we need 
 data_Beta<-dataG%>%
   dplyr::select(Date, Replicate, Temp_Regime, Corridor,Patch, Total_Blepharisma,
                 Total_Didinium, Total_Colpidium, Total_Homolazoon, Total_Bursaria,
@@ -196,8 +169,7 @@ data_Beta<-dataG%>%
   dplyr::ungroup() %>% 
   group_by(Date,Replicate,Temp_Regime,Corridor)
 
-
-###calculate the Bdiv indeces for each replica of each treatment
+##Calculate the Beta Diversity for each replica of each treatment
 
 data_Beta <- data_Beta %>% group_by(Date,Replicate,Temp_Regime,Corridor) %>%
   tidyr::nest() %>%
@@ -207,31 +179,16 @@ data_Beta <- data_Beta %>% group_by(Date,Replicate,Temp_Regime,Corridor) %>%
                                     Patch = c("A","B"))))%>%
   tidyr::unnest(cols = c(data))
 
-
+##add a column with number of days 
 data_Beta<-data_Beta %>% dplyr::ungroup() %>%
   mutate(NumDays = as.numeric(difftime(data_Beta$Date, data_Beta$Date[1], units = "days")))
 
-ggplot(data_Beta, aes(x=Date, y =beta,
-                            col= Temp_Regime, group = Replicate , fill=Temp_Regime ))+
-  geom_point()+
-  geom_smooth(aes(group=Temp_Regime),alpha = 0.1)+
-  facet_wrap(~Corridor)+
-  ggtitle("Patch-dissimilarity index (Beta Bray)")+
-  theme_bw()
-
-ggplot(data_Beta, aes(x=Date, y =beta, color = Corridor))+
-  geom_point()+
-  geom_smooth(alpha = 0.1)+
-  ggtitle("Patch-dissimilarity index (Beta Bray)")+
-  theme_bw()
-
-###select just the last day to analyise the Beta div lst day
+##select just the last day to analyse the Beta diversity at the end of the experiment
 dataBeta_lastday<-data_Beta %>% filter(Date =="2021-12-20") %>% filter((Patch=="A"))
 
 #we need factors to avoid problems in the model
 dataBeta_lastday$Temp_Regime<-as.factor(dataBeta_lastday$Temp_Regime)
 dataBeta_lastday$Corridor<-as.factor(dataBeta_lastday$Corridor)
-write.csv(dataBeta_lastday, file="Data_Betadiv_lastday.csv")
 
 ##visualize data
 ggplot(dataBeta_lastday, aes( x = Temp_Regime, y = beta, col = Temp_Regime))+
