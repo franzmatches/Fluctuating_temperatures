@@ -67,15 +67,15 @@ data_Sh_div$Temp_Regime<-as.factor(data_Sh_div$Temp_Regime)
 ########################################################################################
 ## ANALYSIS of SPECIES RICHNESS LAST DAY WITH INTERACTION Corridor*Temp_Regime ##
 ########################################################################################
-####create a sub-dataset with just the last day of experiment
+##create a sub-dataset with just the last day of experiment
 data_lastday<-data_Sh_div %>%
   filter(NumDays == 28) 
 
-###set these two columns as factors for needed in the following analysis
+##set these two columns as factors for needed in the following analysis
 data_lastday$Corridor<-as.factor(data_lastday$Corridor)
 data_lastday$Temp_Regime<-as.factor(data_lastday$Temp_Regime)
 
-###checking normality assumptions to run the two way anova
+##checking normality assumptions to run the two way anova
 #Build the linear model
 lm1<-lm(Sp_rich~ Corridor*Temp_Regime,
        data = data_lastday)
@@ -85,7 +85,6 @@ ggqqplot(residuals(lm1))
 
 #Compute Shapiro-Wilk test of normality
 shapiro_test(residuals(lm1))
-
 
 #Check normality assumption by groups
 data_lastday %>% 
@@ -98,13 +97,13 @@ ggqqplot(data_lastday, "Sp_rich", ggtheme = theme_bw()) +
 
 #Homogneity of variance test
 data_lastday %>% levene_test(Sp_rich~ Corridor*Temp_Regime)
-####not all the subset of data are normally distributed but we are happy with the model
+####not all the subset of data are normally distributed but we are happy with the model and the other tests
 
-####Run the anova (with two different function, don't know which one to keep, probably aov?)
+##Run the anova (with two different function, don't know which one to keep, probably aov?)
 summary(aov(Sp_rich~ Corridor*Temp_Regime,
             data = data_lastday))
 
-####plotting the analysed data to see if the results match the data
+##plotting the analysed data to see if the results match the data
 
 ggplot(data_lastday, aes( x = Temp_Regime, y = Sp_rich, col = Temp_Regime))+
   geom_boxplot()+
@@ -118,36 +117,27 @@ ggplot(data_lastday, aes( x = Temp_Regime, y = Sp_rich, col = Temp_Regime))+
 ########################################################################################
 ## Shannon Diversity Index THE LAST DAY ACROSS THE TREATMENTS##
 ########################################################################################
-####visualize the data to see what to expect
-##facet corridors
-ggplot(data_lastday, aes( x = Temp_Regime, y = Sh_div, col = Temp_Regime))+
-  geom_boxplot()+
-  facet_grid(~Corridor)+
-  ggtitle("Shannon diversity last day")+
-  theme_bw()
+##checking normality assumptions to run the two way anova
+#Build the linear model#Create a QQ plot of residuals
+lm2<-lm(Sh_div~ Corridor*Temp_Regime,
+        data = data_lastday)
+#Create a QQ plot of residuals
+ggqqplot(residuals(lm2))
 
-##all together
-ggplot(data_lastday, aes( x = Temp_Regime, y = Sh_div, col = Temp_Regime))+
-  geom_boxplot()+
-  ggtitle("Shannon diversity last day")+
-  theme_bw()
+#Compute Shapiro-Wilk test of normality
+shapiro_test(residuals(lm2))
 
-#####checking assumptions to run the two way anova
-ggqqplot(residuals(lm(Sh_div~ Corridor*Temp_Regime,
-       data = data_lastday)))
-
-##normality of the data by groups by means of Shapiro-Wilk test
+#Check normality assumption by groups
 data_lastday %>% 
   group_by(Temp_Regime, Corridor) %>%
   shapiro_test(Sh_div)
-
+#Create QQ plots for each cell of design
 ggqqplot(data_lastday, "Sh_div", ggtheme = theme_bw()) +
   facet_grid(Temp_Regime ~ Corridor)
-
 ##All the points fall approximately along the reference line, for each cell.
-##We can assume normality of the data.
+##Given all the other tests, we can assume normality of the data.
 
-##Homogeneity of variance
+#Homogneity of variance testance
 data_lastday %>% levene_test(Sh_div~ Corridor*Temp_Regime)
 
 
@@ -162,6 +152,19 @@ data_lastday %>% pairwise_t_test(
   p.adjust.method = "bonferroni"
 )
 
+##visualize the data 
+#facet corridors
+ggplot(data_lastday, aes( x = Temp_Regime, y = Sh_div, col = Temp_Regime))+
+  geom_boxplot()+
+  facet_grid(~Corridor)+
+  ggtitle("Shannon diversity last day")+
+  theme_bw()
+
+##all together
+ggplot(data_lastday, aes( x = Temp_Regime, y = Sh_div, col = Temp_Regime))+
+  geom_boxplot()+
+  ggtitle("Shannon diversity last day")+
+  theme_bw()
 
 ########################################################################################
 ##ANALYSIS OF BETA DIVERSITY BETWEEN THE TWO PATCHES at the end of the experiment##
@@ -196,6 +199,39 @@ dataBeta_lastday<-data_Beta %>% filter(Date =="2021-12-20") %>% filter((Patch=="
 dataBeta_lastday$Temp_Regime<-as.factor(dataBeta_lastday$Temp_Regime)
 dataBeta_lastday$Corridor<-as.factor(dataBeta_lastday$Corridor)
 
+###checking normality assumptions to run the two way anova
+#Build the linear model
+dataBeta_lastday %>% ungroup()
+
+modA<-lm(beta~ Corridor*Temp_Regime,
+         data = dataBeta_lastday)
+
+#Create a QQ plot of residuals
+ggqqplot(residuals(modA))
+
+#Compute Shapiro-Wilk test of normality
+shapiro_test(residuals(modA))
+
+#Check normality assumption by groups
+dataBeta_lastday %>% 
+  group_by(Temp_Regime, Corridor) %>%
+  shapiro_test(beta)
+
+#Create QQ plots for each cell of design
+ggqqplot(dataBeta_lastday, "beta", ggtheme = theme_bw()) +
+  facet_grid(Temp_Regime ~ Corridor)
+
+#Homogneity of variance test
+dataBeta_lastday %>% ungroup() %>%  
+  levene_test(beta ~ Corridor*Temp_Regime)
+
+####Run the anova
+summary(aov(modA))
+
+####run multiple comparison post hoc test
+pairwise_t_test(dataBeta_lastday, beta ~ Temp_Regime, 
+                p.adjust.method = "bonferroni")
+
 ##visualize data
 ggplot(dataBeta_lastday, aes( x = Temp_Regime, y = beta, col = Temp_Regime))+
   geom_boxplot()+
@@ -207,62 +243,6 @@ ggplot(dataBeta_lastday, aes( x = Temp_Regime, y = beta, col = Temp_Regime))+
   geom_boxplot()+
   ggtitle("Beta diversity between two patches LAST DAY")+
   theme_bw()
-
-ggplot(dataBeta_lastday, aes(x = Corridor, y = beta, col = Corridor))+
-  geom_boxplot()+
-  ggtitle("Beta diversity between two patches LAST DAY")+
-  theme_bw()
-
-#####checking assumptions to run the two way anova
-dataBeta_lastday %>% ungroup()
-##code the linear model and perform qqplot
-modB<-lm(sqrt(beta)~ Corridor*Temp_Regime,
-         data = dataBeta_lastday)
-
-modA<-lm(beta~ Corridor*Temp_Regime,
-         data = dataBeta_lastday)
-ggqqplot(residuals(modA))
-
-plot(modB)
-hist(residuals(modB))
-ggqqplot(dataBeta_lastday, "beta", ggtheme = theme_bw()) +
-  facet_grid(Temp_Regime ~ Corridor)
-
-dataBeta_lastday %>% shapiro_test(beta)
-dataBeta_lastday %>% ungroup() %>%  
-  levene_test(beta ~ Corridor*Temp_Regime)
-shapiro.test(residuals(modB))
-
-dataBeta_lastday %>% ungroup() %>%  
-  levene_test(beta ~ Corridor*Temp_Regime)
-shapiro.test(residuals(modA))
-
-dataBeta_lastday<-dataBeta_lastday %>% 
-  group_by(Temp_Regime, Corridor) %>%
-  dplyr::mutate(sq_beta = sqrt(beta)) 
-  
-dataBeta_lastday %>% shapiro_test(sq_beta)
-
-ggqqplot(dataBeta_lastday, "sq_beta", ggtheme = theme_bw()) +
-  facet_grid(Temp_Regime ~ Corridor)
-
-dataBeta_lastday %>% ungroup() %>%  
-  levene_test(sq_beta ~ Corridor*Temp_Regime)
-
-dataBeta_lastday<-dataBeta_lastday %>% ungroup()
-
-anova_test(beta ~ Corridor*Temp_Regime,
-           data = dataBeta_lastday)
-anova_test(sq_beta ~ Corridor*Temp_Regime,
-           data = dataBeta_lastday)
-
-
-summary(aov(modB))
-
-
-pairwise_t_test(dataBeta_lastday, sq_beta ~ Temp_Regime, 
-  p.adjust.method = "bonferroni"
-)
 
 
 
