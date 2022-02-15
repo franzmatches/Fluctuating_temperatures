@@ -21,7 +21,7 @@ library(lmtest)
 library(sjmisc)
 library(splines)
 library(DHARMa)
-#####
+#####duncan is cool
 
 
 ###set working directory and load data
