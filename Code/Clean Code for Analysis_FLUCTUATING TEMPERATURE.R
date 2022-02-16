@@ -19,6 +19,7 @@ library(fitdistrplus)
 library(lmtest)
 library(sjmisc)
 library(splines)
+#
 
 ########################################################################################
 #### DATA LOADING AND PREPARATION ####
@@ -285,11 +286,7 @@ shapiro_test(resid(mod_Sp_time))
 
 ##model outputs
 summary(mod_Sp_time)
-anova(mod_Sp_time,test = "Chisq")
 Anova(mod_Sp_time)
-
-##post hoc test
-summary(glht(mod_Sp_time, mcp(Temp_Regime = "Tukey")))
 
 
 ##model simplification 1 (without cubic interaction)
@@ -311,7 +308,6 @@ shapiro.test(resid(mod_simp1))
 
 ##model outputs
 summary(mod_simp1)
-anova(mod_simp1,test = "Chisq")
 Anova(mod_simp1)
 
 
@@ -335,7 +331,6 @@ shapiro.test(resid(mod_simp2))
 
 ##model output
 summary(mod_simp2)
-anova(mod_simp2,test = "Chisq")
 Anova(mod_simp2)
 
 ##model simplification 3 (without "corridor" factor)
