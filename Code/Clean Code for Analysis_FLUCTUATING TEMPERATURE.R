@@ -383,7 +383,7 @@ ggplot(df.simp, aes(x =NumDays, y= Sp_rich,
   geom_ribbon(aes(ymin = lwr,
                   ymax = upr),col="transparent",alpha=0.1)+
   #facet_wrap(~Corridor)+
-  ggtitle("Poisson model without intercept")+
+  ggtitle("Species Richness Poisson model")+
   theme_bw()
 
 
@@ -601,7 +601,6 @@ ggplot(gg.df_VAR, aes(x =NumDays, y= Sh_variance,group = Temp_Regime, col =Temp_
   geom_ribbon(aes(ymin = lwr,
                   ymax = upr),colour="transparent", alpha=0.2)+
   facet_grid(~Corridor)+
-  ggtitle("Model with cubic interaction")+
   theme_bw()
 
 ggplot(data_Sh_div_VAR_no_ZERO, aes(x = Temp_Regime, y = Sh_variance, col = Corridor))+
