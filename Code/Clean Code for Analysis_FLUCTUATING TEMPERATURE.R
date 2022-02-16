@@ -1,9 +1,5 @@
 ######Fluctuating temperature analysis#####
 ###Wolfe, Cerini, O'Brien, Besson, Clements 2022###
-rm(list=ls(all=TRUE))
-###try new computer###
-
-###bla bla###
 
 ####load required packages####
 library(tidyverse) 
@@ -260,12 +256,13 @@ ggplot(dataBeta_lastday, aes( x = Temp_Regime, y = beta, col = Temp_Regime))+
 
 
 
+
 ########################################################################################
 ##########################ANALYSIS THROUGH TIME#########################################
 ########################################################################################
 
 ################################################################################
-#### ANALYSIS of SPECIES RICHNESS THROUHG TIME####
+#### ANALYSIS of SPECIES RICHNESS THROUHG TIME#### 
 ################################################################################
 
 ####Model Building
@@ -467,11 +464,8 @@ hist(residuals(mod_SH_time1_SPLI_Simp2))
 shapiro.test(residuals(mod_SH_time1_SPLI_Simp2))
 
 ###results of the model
-
 summary(mod_SH_time1_SPLI_Simp2)
 Anova(mod_SH_time1_SPLI_Simp2, test.statistic = "F")
-
-summary(glht(mod_SH_time1_SPLI_Simp2, mcp(Temp_Regime = "Tukey")))
 
 ##plot the average difference in Shannon diversity across treatments to see why we have a significant
 ##role of temp_regime
@@ -543,11 +537,6 @@ ggplot(gg.df_TEMP, aes(x =NumDays, y= Sh_div,group = Temp_Regime,
 
 
 
-
-
-
-
-
 ################################################################################
 #### ANALYSIS of Shannon diversity VARIANCE THROUHG TIME ####
 ################################################################################
@@ -581,27 +570,28 @@ mod_SH_VAR_SPL1<-glm(Sh_variance~ ns(NumDays,3) +
 ##visual checking of the model
 plot(mod_SH_VAR_SPL1)   
 
+##plot the residual of the model to look at their distribution
 hist(residuals(mod_SH_VAR_SPL1))
+
+##check normality of the residuals with Shapiro-Wilk test
 shapiro.test(residuals(mod_SH_VAR_SPL1))
 
-###results of the model
+###Output of the model
 
 summary(mod_SH_VAR_SPL1)
 Anova(mod_SH_VAR_SPL1, test.statistic = "F")
-Anova(mod_SH_VAR_SPL1, type = 3)
-anova(mod_SH_VAR_SPL1, test = "F")
 
 
-
-##post hoc
+##post hoc analysis for interaction factor Temp_Regime:Corridor
 anova_var<-aov(Sh_variance~
       Temp_Regime*Corridor,
       data =data_Sh_div_VAR_no_ZERO)
 summary(anova_var)
 
+###extract pairwise comparison and create a dataframe with just the significant p values of comparisons
 sig_comp<-as.data.frame(TukeyHSD(anova_var)$"Temp_Regime:Corridor")
 sig_comp<-sig_comp %>% filter(`p adj` < 0.05)
-
+sig_comp
 
 ##predict values from the model and plot it, to see the fit of the model to real data
 gg.df_VAR <- data.frame(preds = predict(mod_SH_VAR_SPL1, newdata = data_Sh_div_VAR_no_ZERO,type = "response" ),
@@ -609,6 +599,7 @@ gg.df_VAR <- data.frame(preds = predict(mod_SH_VAR_SPL1, newdata = data_Sh_div_V
                             predict(mod_SH_VAR_SPL1, newdata = data_Sh_div_VAR_no_ZERO,se.fit = T,type = "response" )$se.fit ,
                           lwr = predict(mod_SH_VAR_SPL1, newdata = data_Sh_div_VAR_no_ZERO ,se.fit = T ,type = "response")$fit -
                             predict(mod_SH_VAR_SPL1, newdata = data_Sh_div_VAR_no_ZERO ,se.fit = T ,type = "response")$se.fit , data_Sh_div_VAR_no_ZERO)
+
 
 ggplot(gg.df_VAR, aes(x =NumDays, y= Sh_variance,group = Temp_Regime, col =Temp_Regime, fill = Temp_Regime))+
   geom_point(alpha = 0.2)+
@@ -623,12 +614,8 @@ ggplot(data_Sh_div_VAR_no_ZERO, aes(x = Temp_Regime, y = Sh_variance, col = Corr
   geom_boxplot()+
   theme_bw()
 
-ggplot(data_Sh_div_VAR_no_ZERO, aes(x = Corridor, y = Sh_variance, col = Corridor))+
-  geom_boxplot()+
-  theme_bw()
 
-
-##code the simpler model with splines####
+##code the simpler model with splines
 mod_SH_VAR_SPL2<-glm(Sh_variance~ ns(NumDays,3) +
                        Temp_Regime + 
                        Corridor + 
@@ -636,38 +623,8 @@ mod_SH_VAR_SPL2<-glm(Sh_variance~ ns(NumDays,3) +
                      data =data_Sh_div_VAR_no_ZERO,
                      family = gaussian(link = "identity"))
 
-##visual checking of the model
-plot(mod_SH_VAR_SPL2)   
-hist(residuals(mod_SH_VAR_SPL2))
-shapiro.test(residuals(mod_SH_VAR_SPL2))
 
-###results of the model
-
-summary(mod_SH_VAR_SPL2)
-Anova(mod_SH_VAR_SPL2, test.statistic = "F")
-Anova(mod_SH_VAR_SPL2, type = 3)
-anova(mod_SH_VAR_SPL2, test = "F")
-
-##predict values from the model and plot it, to see the fit of the model to real data
-gg.df_VAR2 <- data.frame(preds = predict(mod_SH_VAR_SPL2, newdata = data_Sh_div_VAR_no_ZERO,type = "response" ),
-                        upr = predict(mod_SH_VAR_SPL2, newdata = data_Sh_div_VAR_no_ZERO ,se.fit = T,type = "response" )$fit +
-                          predict(mod_SH_VAR_SPL2, newdata = data_Sh_div_VAR_no_ZERO,se.fit = T,type = "response" )$se.fit ,
-                        lwr = predict(mod_SH_VAR_SPL2, newdata = data_Sh_div_VAR_no_ZERO ,se.fit = T ,type = "response")$fit -
-                          predict(mod_SH_VAR_SPL2, newdata = data_Sh_div_VAR_no_ZERO ,se.fit = T ,type = "response")$se.fit , data_Sh_div_VAR_no_ZERO)
-
-
-ggplot(gg.df_VAR2, aes(x =NumDays, y= Sh_variance,group = Temp_Regime, col =Temp_Regime, fill = Temp_Regime))+
-  geom_point(alpha = 0.2)+
-  geom_line(aes(y=preds))+
-  geom_ribbon(aes(ymin = lwr,
-                  ymax = upr),colour="transparent", alpha=0.2)+
-  facet_grid(~Corridor)+
-  ggtitle("Model WITHOUT cubic interaction")+
-  theme_bw()
-
-
-####comparing the two models
-AIC(mod_SH_VAR_SPL1, mod_SH_VAR_SPL2)
+##Likelihood Ratio Test to compare if our model selection is significant 
 lrtest(mod_SH_VAR_SPL2,mod_SH_VAR_SPL1)
 
 
