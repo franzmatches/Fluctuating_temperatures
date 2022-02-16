@@ -19,7 +19,6 @@ library(fitdistrplus)
 library(lmtest)
 library(sjmisc)
 library(splines)
-library(DHARMa)
 
 ########################################################################################
 #### DATA LOADING AND PREPARATION ####
