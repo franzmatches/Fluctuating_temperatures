@@ -4,6 +4,7 @@
 
 ### Preamble ###
 library(tidyverse) # data wrangling and plotting
+library(vegan)
 library(FactoMineR)
 library(factoextra)
 
@@ -25,14 +26,26 @@ week_four_microcosm_PCA <- prcomp(data_pooled_lastday[,c(6,8:12)],scale. = T)
 
 summary(week_four_microcosm_PCA) # PCs 1 & 2  contribute ~34 and 19% variation respectively
 
-pca_lastday_df <- data.frame(PC1 = week_four_microcosm_PCA$x[,1],
+pca_lastday_df <- data.frame(PC1 = week_four_microcosm_PCA$x[,1], #extract replicate positions and first two PC axes
                              PC2 = week_four_microcosm_PCA$x[,2], 
                              data_pooled_lastday)
+pca_lastday_vars <- data.frame(PC1 = week_four_microcosm_PCA$rotation[,1]*5, #extract species contributions and multiply by 10 for prominent arrows
+                               PC2 =  week_four_microcosm_PCA$rotation[,2]*5,
+                               species = rownames(week_four_microcosm_PCA$rotation))
 
-pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2,col=Temp_Regime))  + 
-  geom_point(aes(shape = Corridor),size = 3, position=position_jitter(0.8)) +
-  stat_ellipse(aes(fill=Temp_Regime), alpha=.2,type='t',size =0.3, geom="polygon")+
-  xlab("PC 1 (34.7% var explained)") + ylab("PC2 (19.1% var explained)")+
+pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  + 
+  geom_vline(xintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
+  geom_hline(yintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
+  geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Long Corridors
+  geom_point(aes(col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Short Corridors
+  stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='norm',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
+  xlab("PC1 (34.7% var explained)") + ylab("PC2 (19.1% var explained)")+
+  scale_alpha_manual(values = c(1,0),
+                     guide = guide_legend(override.aes = list(alpha = 1,fill = c("black",NA))))+
+  geom_segment(data = pca_lastday_vars,aes(x = 0, y= 0, xend = PC1,yend=PC2),
+               arrow = arrow(length=unit(0.15,"cm")),alpha=0.7)+ # add species contribution arrows
+  geom_text(data= pca_lastday_vars, aes(x=PC1, y=PC2, label=species), size = 3, vjust =1,color="black")+ # label arrows
+  xlim(-6.5,6.5)+ylim(-5,5)+ #square plot area for symmetry and unbiased interpretation
   theme_bw()
 
 # fviz_pca_biplot(week_four_microcosm_PCA,
@@ -73,11 +86,23 @@ summary(week_two_microcosm_PCA) # PCs 1 & 2  contribute ~27 and 22% variation re
 pca_half_df <- data.frame(PC1 = week_two_microcosm_PCA$x[,1],
                              PC2 = week_two_microcosm_PCA$x[,2], 
                              data_pooled_half)
+pca_half_vars <- data.frame(PC1 = week_two_microcosm_PCA$rotation[,1]*5, #extract species contributions and multiply by 5 for prominent arrows
+                               PC2 =  week_two_microcosm_PCA$rotation[,2]*5,
+                               species = rownames(week_two_microcosm_PCA$rotation))
 
-pca_half.plot <- ggplot(pca_half_df, aes(x = PC1,y=PC2,col=Temp_Regime))  + 
-  geom_point(aes(shape = Corridor),size = 3, position=position_jitter(0.8)) +
-  stat_ellipse(aes(fill=Temp_Regime), alpha=.2,type='t',size =0.3, geom="polygon")+
+pca_half.plot <- ggplot(pca_half_df, aes(x = PC1,y=PC2))  + 
+  geom_vline(xintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
+  geom_hline(yintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
+  geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Long Corridors
+  geom_point(aes(col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Short Corridors
+  stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='norm',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
   xlab("PC 1 (26.6% var explained)") + ylab("PC2 (22.1% var explained)")+
+  scale_alpha_manual(values = c(1,0),
+                     guide = guide_legend(override.aes = list(alpha = 1,fill = c("black",NA))))+
+  geom_segment(data = pca_half_vars,aes(x = 0, y= 0, xend = PC1,yend=PC2),
+               arrow = arrow(length=unit(0.15,"cm")),alpha=0.7)+ # add species contribution arrows
+  geom_text(data= pca_half_vars, aes(x=PC1, y=PC2, label=species), size = 3, vjust =1,color="black")+ # label arrows
+  xlim(-5.5,5.5)+ylim(-6,6)+ #square plot area for symmetry and unbiased interpretation
   theme_bw()
 
 # fviz_pca_biplot(week_two_microcosm_PCA,
