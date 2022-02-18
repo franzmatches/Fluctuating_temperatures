@@ -66,9 +66,9 @@ adonis(data_pooled_lastday[,c(6:12)]~data_pooled_lastday$Temp_Regime + data_pool
 #----------------------------------------------------------------------------------------
 
 #week_four_microcosm_PCA <- FactoMineR::PCA(data_pooled_lastday[,c(6:12)],scale.unit = TRUE, graph = FALSE)
-week_two_microcosm_PCA <- prcomp(data_pooled_half[,c(6,8:12)],scale. = T)
+week_two_microcosm_PCA <- prcomp(data_pooled_half[,c(6:12)],scale. = T)
 
-summary(week_two_microcosm_PCA) # PCs 1 & 2  contribute ~31 and 21% variation respectively
+summary(week_two_microcosm_PCA) # PCs 1 & 2  contribute ~27 and 22% variation respectively
 
 pca_half_df <- data.frame(PC1 = week_two_microcosm_PCA$x[,1],
                              PC2 = week_two_microcosm_PCA$x[,2], 
@@ -77,7 +77,7 @@ pca_half_df <- data.frame(PC1 = week_two_microcosm_PCA$x[,1],
 pca_half.plot <- ggplot(pca_half_df, aes(x = PC1,y=PC2,col=Temp_Regime))  + 
   geom_point(aes(shape = Corridor),size = 3, position=position_jitter(0.8)) +
   stat_ellipse(aes(fill=Temp_Regime), alpha=.2,type='t',size =0.3, geom="polygon")+
-  xlab("PC 1 (30.8% var explained)") + ylab("PC2 (21.1% var explained)")+
+  xlab("PC 1 (26.6% var explained)") + ylab("PC2 (22.1% var explained)")+
   theme_bw()
 
 # fviz_pca_biplot(week_two_microcosm_PCA,
