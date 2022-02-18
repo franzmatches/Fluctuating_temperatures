@@ -62,7 +62,7 @@ adonis(data_pooled_lastday[,c(6:12)]~data_pooled_lastday$Temp_Regime + data_pool
        data = data_pooled_lastday, method = "bray") # no interaction per other analyses
 
 #----------------------------------------------------------------------------------------
-## VISUALISE COMMUNITY AT THE END OF THE EXPERIMENT ## 
+## VISUALISE COMMUNITY HALFWAY THROUGH THE EXPERIMENT ## 
 #----------------------------------------------------------------------------------------
 
 #week_four_microcosm_PCA <- FactoMineR::PCA(data_pooled_lastday[,c(6:12)],scale.unit = TRUE, graph = FALSE)
