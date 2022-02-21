@@ -10,19 +10,19 @@ library(factoextra)
 
 source("Code/data_preparation.R")
 
-colnames(data_pooled)[6:12] <- c("Blepharisma","Didinium","Colpidium","Homolazoon","Bursaria","Spirostomum","Paramecium")
+colnames(data_pooled)[6:12] <- c("Blepharisma","Didinium","Colpidium","Homolazoon","Bursaria","Spirostomum","Paramecium") #rename species for plotting
 data_pooled_lastday <- data_pooled %>%
-  filter(NumDays ==max(NumDays)) 
+  filter(NumDays ==max(NumDays)) #filter to last day of experiment
 
 data_pooled_half <- data_pooled %>%
-  filter(NumDays == max(NumDays)/2) 
+  filter(NumDays == max(NumDays)/2) #filter to halfway through experiment
 
 #----------------------------------------------------------------------------------------
 ## VISUALISE COMMUNITY AT THE END OF THE EXPERIMENT ## 
 #----------------------------------------------------------------------------------------
 
 #week_four_microcosm_PCA <- FactoMineR::PCA(data_pooled_lastday[,c(6:12)],scale.unit = TRUE, graph = FALSE)
-week_four_microcosm_PCA <- prcomp(data_pooled_lastday[,c(6,8:12)],scale. = T)
+week_four_microcosm_PCA <- prcomp(data_pooled_lastday[,c(6,8:12)],scale. = T) #estimate PCs using base R prcomp (scaled and centered)
 
 summary(week_four_microcosm_PCA) # PCs 1 & 2  contribute ~34 and 19% variation respectively
 
@@ -30,14 +30,14 @@ pca_lastday_df <- data.frame(PC1 = week_four_microcosm_PCA$x[,1], #extract repli
                              PC2 = week_four_microcosm_PCA$x[,2], 
                              data_pooled_lastday) %>%
   left_join(aggregate(cbind(PC1.centroid = week_four_microcosm_PCA$x[,1],PC2.centroid = week_four_microcosm_PCA$x[,2])~Temp_Regime, 
-                      data =data_pooled_lastday, mean))
+                      data =data_pooled_lastday, mean)) #extract centroid positions (mean)
 
 
-
-pca_lastday_vars <- data.frame(PC1 = week_four_microcosm_PCA$rotation[,1]*5, #extract species contributions and multiply by 10 for prominent arrows
+pca_lastday_vars <- data.frame(PC1 = week_four_microcosm_PCA$rotation[,1]*5, #extract species contributions and multiply by 5 for prominent arrows
                                PC2 =  week_four_microcosm_PCA$rotation[,2]*5,
                                species = rownames(week_four_microcosm_PCA$rotation))
 
+#recreate fviz_pca_biplot as raw ggplot
 pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  + 
   geom_vline(xintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
   geom_hline(yintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
@@ -45,7 +45,7 @@ pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  +
   # geom_point(aes(col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Short Corridors
   geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3) + # points for Long Corridors
   geom_point(aes(col=Temp_Regime),shape = 21,size = 3) + # points for Short Corridors
-  geom_point(aes(x = PC1.centroid, y= PC2.centroid,fill=Temp_Regime,col=Temp_Regime),shape = 12,size = 5) + # points for Long Corridors
+  geom_point(aes(x = PC1.centroid, y= PC2.centroid,fill=Temp_Regime,col=Temp_Regime),shape = 8,size = 5) + # points for Long Corridors
   #stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='t',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
   ggpubr::stat_chull(aes(fill=Temp_Regime,col=Temp_Regime), alpha = 0.1, 
              geom = "polygon")+
@@ -83,12 +83,20 @@ pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  +
 #         aspect.ratio = 1)+
 #   labs(x = "PC1", y = "PC2")
 
-pooled_lastday_dist <- vegan::vegdist(data_pooled_lastday[,c(6:12)],method = "bray")
+pooled_lastday_dist <- vegan::vegdist(data_pooled_lastday[,c(6:12)],method = "bray") #estimate bray-curtis dissimilarity due high proportion of zeroes
 
+#perform PERMANOVA and PERMDIST
 adonis2(pooled_lastday_dist~data_pooled_lastday$Temp_Regime + data_pooled_lastday$Corridor,
-       data = data_pooled_lastday, method = "bray",by="margin") # no interaction per other analyses
-anova(vegan::betadisper(pooled_lastday_dist,data_pooled_lastday$Temp_Regime,type = "centroid"))
-plot(vegan::betadisper(pooled_lastday_dist,data_pooled_lastday$Temp_Regime,type = "centroid"),label = F)
+       data = data_pooled_lastday, method = "bray",by="margin") # no interaction included per other analyses
+
+## DEFINING `TYPE` AS CENTROID/MEDIAN ALTERS INTERPRETATION ##
+permutest(vegan::betadisper(pooled_lastday_dist,data_pooled_lastday$Temp_Regime,type = "centroid"),pairwise = T) 
+#PERMDIST with pairwise comparisons. permutest vegan specific function with greater customisation
+#dispersions are heterogeneous due Constant:Fluctuating_Synchro
+#TukeyHSD(vegan::betadisper(pooled_lastday_dist,data_pooled_lastday$Temp_Regime,type = "centroid")) #agrees
+
+permutest(vegan::betadisper(pooled_lastday_dist,data_pooled_lastday$Corridor,type = "centroid"),pairwise = T) 
+#dispersions are homogeneous
 
 #----------------------------------------------------------------------------------------
 ## VISUALISE COMMUNITY HALFWAY THROUGH THE EXPERIMENT ## 
@@ -146,9 +154,16 @@ pca_half.plot <- ggplot(pca_half_df, aes(x = PC1,y=PC2))  +
 #   labs(x = "PC1", y = "PC2")
 
 pooled_half_dist <- vegan::vegdist(data_pooled_half[,c(6:12)],method = "bray")
+#perform PERMANOVA and PERMDIST
 vegan::adonis2(pooled_half_dist~data_pooled_half$Temp_Regime + data_pooled_half$Corridor,
                data = data_pooled_half, method = "bray",by="margin") # no interaction per other analyses
-anova(vegan::betadisper(pooled_half_dist,data_pooled_half$Temp_Regime,type = "centroid"))
+permutest(vegan::betadisper(pooled_half_dist,data_pooled_half$Temp_Regime,type = "centroid"),pairwise = T) #PERMDIST with pairwise comparisons 
+#TukeyHSD(vegan::betadisper(pooled_half_dist,data_pooled_half$Temp_Regime,type = "centroid")) #agrees
+
+permutest(vegan::betadisper(pooled_half_dist,data_pooled_half$Corridor,type = "centroid"),pairwise = T) 
+#TukeyHSD(vegan::betadisper(pooled_half_dist,data_pooled_half$Corridor,type = "centroid"))
+#dispersions are hetergeneous
+
 
 #----------------------------------------------------------------------------------------
 ## Combined 14 and 28 day PCA ##
