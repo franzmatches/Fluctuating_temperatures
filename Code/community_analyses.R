@@ -3,7 +3,7 @@
 #########################################################################################
 
 ### Preamble ###
-library(tidyverse) # data wrangling and plotting
+library(tidyverse) #  data wrangling and plotting
 library(vegan) # community ecology metrics and analysis
 library(ggrepel) # non-overlapping labels
 library(ggpubr) # multi-panelled plotting
