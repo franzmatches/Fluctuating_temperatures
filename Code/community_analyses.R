@@ -3,7 +3,7 @@
 #########################################################################################
 
 ### Preamble ###
-library(tidyverse) #  data wrangling and plotting
+library(tidyverse) # data wrangling and plotting
 library(vegan) # community ecology metrics and analysis
 library(ggrepel) # non-overlapping labels
 library(ggpubr) # multi-panelled plotting
@@ -91,7 +91,7 @@ pooled_lastday_dist <- vegan::vegdist(data_pooled_lastday[,c(6:12)],method = "br
 
 #perform PERMANOVA and PERMDIST.
 vegan::adonis2(pooled_lastday_dist~data_pooled_lastday$Temp_Regime + data_pooled_lastday$Corridor,
-       data = data_pooled_lastday,by="margin") # no interaction included per other analyses
+               data = data_pooled_lastday,by="margin") # no interaction included per other analyses
 #adonis2 preferred to adonis due to improved customisation and clarity. 
 #by = "margin" is marginal effect of each predictor rather than additional effect that
 #predictor has over previous. Therefore order of predictors supplied to model irrelevant
@@ -115,11 +115,11 @@ week_two_microcosm_PCA <- prcomp(data_pooled_half[,c(6:12)],scale. = T)
 summary(week_two_microcosm_PCA) # PCs 1 & 2  contribute ~27 and 22% variation respectively
 
 pca_half_df <- data.frame(PC1 = week_two_microcosm_PCA$x[,1],
-                             PC2 = week_two_microcosm_PCA$x[,2], 
-                             data_pooled_half)
+                          PC2 = week_two_microcosm_PCA$x[,2], 
+                          data_pooled_half)
 pca_half_vars <- data.frame(PC1 = week_two_microcosm_PCA$rotation[,1]*5, #extract species contributions and multiply by 5 for prominent arrows
-                               PC2 =  week_two_microcosm_PCA$rotation[,2]*5,
-                               species = rownames(week_two_microcosm_PCA$rotation))
+                            PC2 =  week_two_microcosm_PCA$rotation[,2]*5,
+                            species = rownames(week_two_microcosm_PCA$rotation))
 
 pca_half.plot <- ggplot(pca_half_df, aes(x = PC1,y=PC2))  + 
   geom_vline(xintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
@@ -192,17 +192,17 @@ interaction.prc <-  vegan::prc(log1p(data_pooled[,c(6:12)]),treatment = interact
 #multiple treatment factors aren't possible in standard prc, therefore explore interactions
 
 summary_temp_regime1 <- summary(temp_regime.prc, scaling = "symmetric", axis = 1,
-                              correlation = F) #extract first component 
+                                correlation = F) #extract first component 
 summary_temp_regime2 <- summary(temp_regime.prc, scaling = "symmetric", axis = 2,
-                               correlation = F) #extract second component 
+                                correlation = F) #extract second component 
 summary_corridor1 <- summary(corridor.prc, scaling = "symmetric", axis = 1,
-                              correlation = F)
+                             correlation = F)
 summary_corridor2 <- summary(corridor.prc, scaling = "symmetric", axis = 2,
                              correlation = F)
 summary_interaction1 <- summary(interaction.prc, scaling = "symmetric", axis = 1,
-                             correlation = F)
+                                correlation = F)
 summary_interaction2 <- summary(interaction.prc, scaling = "symmetric", axis = 2,
-                             correlation = F)
+                                correlation = F)
 
 anova(corridor.prc) # differences identified using an ANOVA but no post hoc tests available
 anova(temp_regime.prc) # differences identified
@@ -214,7 +214,7 @@ df_pc1 <- data.frame(NumDays = unique(data_pooled$NumDays), Short = t(coef(summa
   pivot_longer(-NumDays,names_to = "treatment",values_to = "effect") %>% # pivot to long format
   mutate(Treatment_category = ifelse(treatment %in% c("Short","Long"),"Corridor","Temp_Regime"))%>% # classify into treatments
   mutate(PC = "PC1") # classify associated principal component
-  
+
 df_pc2 <- data.frame(NumDays = unique(data_pooled$NumDays), Short = t(coef(summary_corridor2)), Long = 0, Constant = 0) %>% 
   cbind(t(coef(summary_temp_regime2))) %>%
   pivot_longer(-NumDays,names_to = "treatment",values_to = "effect") %>%
@@ -231,12 +231,12 @@ ggplot(df_fin,aes(x=NumDays,y=effect)) +
   scale_color_manual(values = scales::hue_pal()(6),name = "Treatment") +
   theme_bw() + xlab("Day of experiment") + ylab("Effect") +
   geom_rug(data = rbind(data.frame(spp = names(summary_corridor1$sp),effect = summary_corridor1$sp*0.1, PC = "PC1",Treatment_category = "Corridor"),
-                       data.frame(spp = names(summary_corridor1$sp),effect = summary_corridor1$sp*0.1, PC = "PC2",Treatment_category = "Corridor"),
-                       data.frame(spp = names(summary_temp_regime1$sp),effect = summary_temp_regime1$sp*0.1, PC = "PC1",Treatment_category = "Temp_Regime"),
-                       data.frame(spp = names(summary_temp_regime2$sp),effect = summary_temp_regime2$sp*0.1, PC = "PC2",Treatment_category = "Temp_Regime")),
-          sides = "r",outside = F, #geom_rug plots influence strength of individual species on second y axis
-          mapping = aes_string(group = NULL, x = NULL,
-                               colour = NULL, linetype = NULL)) +
+                        data.frame(spp = names(summary_corridor1$sp),effect = summary_corridor1$sp*0.1, PC = "PC2",Treatment_category = "Corridor"),
+                        data.frame(spp = names(summary_temp_regime1$sp),effect = summary_temp_regime1$sp*0.1, PC = "PC1",Treatment_category = "Temp_Regime"),
+                        data.frame(spp = names(summary_temp_regime2$sp),effect = summary_temp_regime2$sp*0.1, PC = "PC2",Treatment_category = "Temp_Regime")),
+           sides = "r",outside = F, #geom_rug plots influence strength of individual species on second y axis
+           mapping = aes_string(group = NULL, x = NULL,
+                                colour = NULL, linetype = NULL)) +
   scale_y_continuous("Effect", sec.axis = sec_axis(trans = ~ .*10, name = "Species influence")) + # plot and standardise second y axis as magnitude of effects too large to fit on original (left hand) scale
   ggrepel::geom_text_repel(data= rbind(data.frame(spp = names(summary_corridor1$sp),effect = summary_corridor1$sp*0.1, PC = "PC1",Treatment_category = "Corridor"),
                                        data.frame(spp = names(summary_corridor1$sp),effect = summary_corridor1$sp*0.1, PC = "PC2",Treatment_category = "Corridor"),
@@ -270,5 +270,5 @@ ggplot(df_interaction_fin,aes(x=NumDays,y=effect)) +
                                 colour = NULL, linetype = NULL)) +
   scale_y_continuous("Effect", sec.axis = sec_axis(trans = ~ .*20, name = "Species influence")) + 
   ggrepel::geom_text_repel(data= rbind(data.frame(spp = names(summary_interaction1$sp),effect = summary_interaction1$sp*0.05, PC = "PC1"),
-                        data.frame(spp = names(summary_interaction2$sp),effect = summary_interaction2$sp*0.05, PC = "PC2")),
-            mapping=aes(x=30,y=effect,label=spp),hjust=-1, size=3, direction = "y",box.padding = 0.1,min.segment.length = 0.05,vjust = 0.55) 
+                                       data.frame(spp = names(summary_interaction2$sp),effect = summary_interaction2$sp*0.05, PC = "PC2")),
+                           mapping=aes(x=30,y=effect,label=spp),hjust=-1, size=3, direction = "y",box.padding = 0.1,min.segment.length = 0.05,vjust = 0.55) 
