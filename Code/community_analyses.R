@@ -28,7 +28,12 @@ summary(week_four_microcosm_PCA) # PCs 1 & 2  contribute ~34 and 19% variation r
 
 pca_lastday_df <- data.frame(PC1 = week_four_microcosm_PCA$x[,1], #extract replicate positions and first two PC axes
                              PC2 = week_four_microcosm_PCA$x[,2], 
-                             data_pooled_lastday)
+                             data_pooled_lastday) %>%
+  left_join(aggregate(cbind(PC1.centroid = week_four_microcosm_PCA$x[,1],PC2.centroid = week_four_microcosm_PCA$x[,2])~Temp_Regime, 
+                      data =data_pooled_lastday, mean))
+
+
+
 pca_lastday_vars <- data.frame(PC1 = week_four_microcosm_PCA$rotation[,1]*5, #extract species contributions and multiply by 10 for prominent arrows
                                PC2 =  week_four_microcosm_PCA$rotation[,2]*5,
                                species = rownames(week_four_microcosm_PCA$rotation))
@@ -36,15 +41,21 @@ pca_lastday_vars <- data.frame(PC1 = week_four_microcosm_PCA$rotation[,1]*5, #ex
 pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  + 
   geom_vline(xintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
   geom_hline(yintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
-  geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Long Corridors
-  geom_point(aes(col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Short Corridors
-  stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='norm',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
+  # geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Long Corridors
+  # geom_point(aes(col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Short Corridors
+  geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3) + # points for Long Corridors
+  geom_point(aes(col=Temp_Regime),shape = 21,size = 3) + # points for Short Corridors
+  geom_point(aes(x = PC1.centroid, y= PC2.centroid,fill=Temp_Regime,col=Temp_Regime),shape = 12,size = 5) + # points for Long Corridors
+  #stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='t',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
+  ggpubr::stat_chull(aes(fill=Temp_Regime,col=Temp_Regime), alpha = 0.1, 
+             geom = "polygon")+
   xlab("PC1 (34.7% var explained)") + ylab("PC2 (19.1% var explained)")+
   scale_alpha_manual(values = c(1,0),
                      guide = guide_legend(override.aes = list(alpha = 1,fill = c("black",NA))))+
   geom_segment(data = pca_lastday_vars,aes(x = 0, y= 0, xend = PC1,yend=PC2),
                arrow = arrow(length=unit(0.15,"cm")),alpha=0.7)+ # add species contribution arrows
-  geom_text(data= pca_lastday_vars, aes(x=PC1, y=PC2, label=species), size = 3, vjust =1,color="black")+ # label arrows
+  #geom_text(data= pca_lastday_vars, aes(x=PC1, y=PC2, label=species), size = 3, vjust =1,color="black")+ # label arrows
+  ggrepel::geom_text_repel(data= pca_lastday_vars, aes(x=PC1, y=PC2, label=species), size = 3,color="black",direction = "y")+ # label arrows
   xlim(-6.5,6.5)+ylim(-5,5)+ #square plot area for symmetry and unbiased interpretation
   theme_bw()
 
@@ -62,7 +73,8 @@ pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  +
 #                 title = NULL,
 #                 ellipse.type = "confidence",
 #                 legend.title = "Temperature treatment",
-#                 geom.ind = "point")+
+#                 geom.ind = "point",
+#                 ellipse.level=0.95)+
 #   #add different shape points for long vs. short corridors (can't do this with fviz)
 #   geom_point(aes(shape = data_pooled_lastday$Corridor,
 #                  colour = data_pooled_lastday$Temp_Regime)) +
@@ -71,14 +83,18 @@ pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  +
 #         aspect.ratio = 1)+
 #   labs(x = "PC1", y = "PC2")
 
-adonis(data_pooled_lastday[,c(6:12)]~data_pooled_lastday$Temp_Regime + data_pooled_lastday$Corridor,
-       data = data_pooled_lastday, method = "bray") # no interaction per other analyses
+pooled_lastday_dist <- vegan::vegdist(data_pooled_lastday[,c(6:12)],method = "bray")
+
+adonis2(pooled_lastday_dist~data_pooled_lastday$Temp_Regime + data_pooled_lastday$Corridor,
+       data = data_pooled_lastday, method = "bray",by="margin") # no interaction per other analyses
+anova(vegan::betadisper(pooled_lastday_dist,data_pooled_lastday$Temp_Regime,type = "centroid"))
+plot(vegan::betadisper(pooled_lastday_dist,data_pooled_lastday$Temp_Regime,type = "centroid"),label = F)
 
 #----------------------------------------------------------------------------------------
 ## VISUALISE COMMUNITY HALFWAY THROUGH THE EXPERIMENT ## 
 #----------------------------------------------------------------------------------------
 
-#week_four_microcosm_PCA <- FactoMineR::PCA(data_pooled_lastday[,c(6:12)],scale.unit = TRUE, graph = FALSE)
+#week_two_microcosm_PCA <- FactoMineR::PCA(data_pooled_half[,c(6:12)],scale.unit = TRUE, graph = FALSE)
 week_two_microcosm_PCA <- prcomp(data_pooled_half[,c(6:12)],scale. = T)
 
 summary(week_two_microcosm_PCA) # PCs 1 & 2  contribute ~27 and 22% variation respectively
@@ -95,14 +111,15 @@ pca_half.plot <- ggplot(pca_half_df, aes(x = PC1,y=PC2))  +
   geom_hline(yintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
   geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Long Corridors
   geom_point(aes(col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Short Corridors
-  stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='norm',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
-  xlab("PC 1 (26.6% var explained)") + ylab("PC2 (22.1% var explained)")+
+  stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='t',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
+  xlab("PC1 (26.6% var explained)") + ylab("PC2 (22.1% var explained)")+
   scale_alpha_manual(values = c(1,0),
                      guide = guide_legend(override.aes = list(alpha = 1,fill = c("black",NA))))+
   geom_segment(data = pca_half_vars,aes(x = 0, y= 0, xend = PC1,yend=PC2),
                arrow = arrow(length=unit(0.15,"cm")),alpha=0.7)+ # add species contribution arrows
-  geom_text(data= pca_half_vars, aes(x=PC1, y=PC2, label=species), size = 3, vjust =1,color="black")+ # label arrows
-  xlim(-5.5,5.5)+ylim(-6,6)+ #square plot area for symmetry and unbiased interpretation
+  #geom_text(data= pca_half_vars, aes(x=PC1, y=PC2, label=species), size = 3, vjust =1,color="black")+ # label arrows
+  ggrepel::geom_text_repel(data= pca_half_vars, aes(x=PC1, y=PC2, label=species), size = 3,color="black",direction = "y")+ # label arrows
+  xlim(-5.5,5.5)+ylim(-7.0,7.0)+ #square plot area for symmetry and unbiased interpretation
   theme_bw()
 
 # fviz_pca_biplot(week_two_microcosm_PCA,
@@ -128,8 +145,10 @@ pca_half.plot <- ggplot(pca_half_df, aes(x = PC1,y=PC2))  +
 #         aspect.ratio = 1)+
 #   labs(x = "PC1", y = "PC2")
 
-adonis(data_pooled_half[,c(6:12)]~data_pooled_half$Temp_Regime + data_pooled_half$Corridor,
-       data = data_pooled_half, method = "bray") # no interaction per other analyses
+pooled_half_dist <- vegan::vegdist(data_pooled_half[,c(6:12)],method = "bray")
+vegan::adonis2(pooled_half_dist~data_pooled_half$Temp_Regime + data_pooled_half$Corridor,
+               data = data_pooled_half, method = "bray",by="margin") # no interaction per other analyses
+anova(vegan::betadisper(pooled_half_dist,data_pooled_half$Temp_Regime,type = "centroid"))
 
 #----------------------------------------------------------------------------------------
 ## Combined 14 and 28 day PCA ##
@@ -161,7 +180,6 @@ summary_interaction2 <- summary(interaction.prc, scaling = "symmetric", axis = 2
                              correlation = F)
 
 anova(corridor.prc) # differences identified using an ANOVA but no post hoc tests available
-permutest(corridor.prc)
 anova(temp_regime.prc) # differences identified
 anova(interaction.prc) # differences identified
 
@@ -199,7 +217,8 @@ ggplot(df_fin,aes(x=NumDays,y=effect)) +
                                        data.frame(spp = names(summary_corridor1$sp),effect = summary_corridor1$sp*0.1, PC = "PC2",Treatment_category = "Corridor"),
                                        data.frame(spp = names(summary_temp_regime1$sp),effect = summary_temp_regime1$sp*0.1, PC = "PC1",Treatment_category = "Temp_Regime"),
                                        data.frame(spp = names(summary_temp_regime2$sp),effect = summary_temp_regime2$sp*0.1, PC = "PC2",Treatment_category = "Temp_Regime")),
-                           mapping=aes(x=30,y=effect,label=spp),hjust=0, size=3, direction = "y",box.padding = 0.3,min.segment.length = 0.1,vjust=0.55) #label species
+                           mapping=aes(x=32,y=effect,label=spp),hjust=-0.5, size=3, direction = "y",box.padding = 0.3,min.segment.length = 0.1,vjust=0.55) +#label species
+  xlim(0,32)
 
 df_interaction_pc1 <- data.frame(NumDays = unique(data_pooled$NumDays), Long.Constant =0) %>% 
   cbind(t(coef(summary_interaction1))) %>%
@@ -227,4 +246,4 @@ ggplot(df_interaction_fin,aes(x=NumDays,y=effect)) +
   scale_y_continuous("Effect", sec.axis = sec_axis(trans = ~ .*20, name = "Species influence")) + 
   ggrepel::geom_text_repel(data= rbind(data.frame(spp = names(summary_interaction1$sp),effect = summary_interaction1$sp*0.05, PC = "PC1"),
                         data.frame(spp = names(summary_interaction2$sp),effect = summary_interaction2$sp*0.05, PC = "PC2")),
-            mapping=aes(x=30,y=effect,label=spp),hjust=0, size=3, direction = "y",box.padding = 0.2,min.segment.length = 0.1,vjust = 0.1) 
+            mapping=aes(x=30,y=effect,label=spp),hjust=-1, size=3, direction = "y",box.padding = 0.1,min.segment.length = 0.05,vjust = 0.55) 
