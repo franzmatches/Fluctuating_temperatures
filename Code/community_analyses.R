@@ -1,7 +1,6 @@
 #########################################################################################
 ### Community ###
 #########################################################################################
-#hello Ellie
 
 ### Preamble ###
 library(tidyverse) # data wrangling and plotting
@@ -24,7 +23,6 @@ data_pooled_half <- data_pooled %>%
 ## VISUALISE COMMUNITY AT THE END OF THE EXPERIMENT ## 
 #----------------------------------------------------------------------------------------
 
-#week_four_microcosm_PCA <- FactoMineR::PCA(data_pooled_lastday[,c(6:12)],scale.unit = TRUE, graph = FALSE)
 week_four_microcosm_PCA <- prcomp(data_pooled_lastday[,c(6,8:12)],scale. = T) #estimate PCs using base R prcomp (scaled and centered)
 #Didinium dropped due to all zeroes across treatments and inability to scale when variance is constant
 
@@ -51,8 +49,8 @@ pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  +
   geom_point(aes(col=Temp_Regime),shape = 21,size = 3) + # points for Short Corridors
   stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='t',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
   #geom_point(aes(x = PC1.centroid, y= PC2.centroid,fill=Temp_Regime,col=Temp_Regime),shape = 8,size = 5) + # points for Temp_Regime centroids
-  # ggpubr::stat_chull(aes(fill=Temp_Regime,col=Temp_Regime), alpha = 0.1, 
-  #            geom = "polygon")+ # Temp_Regime convex hulls
+  #ggpubr::stat_chull(aes(fill=Temp_Regime,col=Temp_Regime), alpha = 0.1, 
+  #                   geom = "polygon")+ # Temp_Regime convex hulls
   xlab("PC1 (34.7% var explained)") + ylab("PC2 (19.1% var explained)")+
   scale_alpha_manual(values = c(1,0),
                      guide = guide_legend(override.aes = list(alpha = 1,fill = c("black",NA))))+ # legend customisation of Long vs Short corridors
@@ -62,30 +60,6 @@ pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  +
   ggrepel::geom_text_repel(data= pca_lastday_vars, aes(x=PC1, y=PC2, label=species), size = 3,color="black",direction = "y")+ # label arrows and ensure minimal overlap in text
   xlim(-6.5,6.5)+ylim(-5,5)+ #symmetrical plot area for unbiased interpretation
   theme_bw()
-
-# fviz_pca_biplot(week_four_microcosm_PCA,
-#                 col.var = "black",
-#                 label = "var",
-#                 alpha.ind = 0.1,#make these points invisible to have diff shapes for points
-#                 labelsize = 2,
-#                 repel = TRUE,
-#                 geom_ind = "points",
-#                 col.ind = data_pooled_lastday$Temp_Regime,
-#                 palette = c("#00AFBB", "#E7B800", "#FC4E07", "#0073C2FF"),
-#                 mean.point = FALSE,
-#                 addEllipses = TRUE,
-#                 title = NULL,
-#                 ellipse.type = "confidence",
-#                 legend.title = "Temperature treatment",
-#                 geom.ind = "point",
-#                 ellipse.level=0.95)+
-#   #add different shape points for long vs. short corridors (can't do this with fviz)
-#   geom_point(aes(shape = data_pooled_lastday$Corridor,
-#                  colour = data_pooled_lastday$Temp_Regime)) +
-#   scale_shape_manual(values = c(3,4,15,17,19,16))+
-#   theme(legend.position = "none",
-#         aspect.ratio = 1)+
-#   labs(x = "PC1", y = "PC2")
 
 ## ASSESS EFFECT OF TREATMENT ON FINAL COMMUNITY COMPOSITION ##
 pooled_lastday_dist <- vegan::vegdist(data_pooled_lastday[,c(6:12)],method = "bray") #estimate bray-curtis dissimilarity due high proportion of zeroes
@@ -97,7 +71,7 @@ vegan::adonis2(pooled_lastday_dist~data_pooled_lastday$Temp_Regime + data_pooled
 #by = "margin" is marginal effect of each predictor rather than additional effect that
 #predictor has over previous. Therefore order of predictors supplied to model irrelevant
 
-#!!!DEFINING `TYPE` AS CENTROID/MEDIAN ALTERS INTERPRETATION!!!# Needs discussing
+#!!!DEFINING `TYPE` AS CENTROID/MEDIAN ALTERS INTERPRETATION!!!# Needs discussing - decided to stick with centroid
 vegan::permutest(vegan::betadisper(pooled_lastday_dist,data_pooled_lastday$Temp_Regime,type = "centroid"),pairwise = T) #compare variance of Temp_Regime groups 
 #PERMDIST with pairwise comparisons. permutest = vegan specific function with greater customisation
 #dispersions are heterogeneous due Constant:Fluctuating_Synchro
@@ -117,7 +91,10 @@ summary(week_two_microcosm_PCA) # PCs 1 & 2  contribute ~27 and 22% variation re
 
 pca_half_df <- data.frame(PC1 = week_two_microcosm_PCA$x[,1],
                           PC2 = week_two_microcosm_PCA$x[,2], 
-                          data_pooled_half)
+                          data_pooled_half) %>% # combine with original dataset
+  left_join(aggregate(cbind(PC1.centroid = week_two_microcosm_PCA$x[,1],PC2.centroid = week_two_microcosm_PCA$x[,2])~Temp_Regime, 
+                      data =data_pooled_half, mean)) #extract centroid positions (mean) for plotting (if desired)
+
 pca_half_vars <- data.frame(PC1 = week_two_microcosm_PCA$rotation[,1]*5, #extract species contributions and multiply by 5 for prominent arrows
                             PC2 =  week_two_microcosm_PCA$rotation[,2]*5,
                             species = rownames(week_two_microcosm_PCA$rotation))
@@ -125,9 +102,14 @@ pca_half_vars <- data.frame(PC1 = week_two_microcosm_PCA$rotation[,1]*5, #extrac
 pca_half.plot <- ggplot(pca_half_df, aes(x = PC1,y=PC2))  + 
   geom_vline(xintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
   geom_hline(yintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
-  geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Long Corridors
-  geom_point(aes(col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Short Corridors
+  #geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Long Corridors
+  #geom_point(aes(col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Short Corridors
+  geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3) + # points for Long Corridors
+  geom_point(aes(col=Temp_Regime),shape = 21,size = 3) + # points for Short Corridors
   stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='t',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
+  #geom_point(aes(x = PC1.centroid, y= PC2.centroid,fill=Temp_Regime,col=Temp_Regime),shape = 8,size = 5) + # points for Temp_Regime centroids
+  #ggpubr::stat_chull(aes(fill=Temp_Regime,col=Temp_Regime), alpha = 0.1, 
+  #                   geom = "polygon")+ # Temp_Regime convex hulls
   xlab("PC1 (26.6% var explained)") + ylab("PC2 (22.1% var explained)")+
   scale_alpha_manual(values = c(1,0),
                      guide = guide_legend(override.aes = list(alpha = 1,fill = c("black",NA))))+
@@ -137,29 +119,6 @@ pca_half.plot <- ggplot(pca_half_df, aes(x = PC1,y=PC2))  +
   ggrepel::geom_text_repel(data= pca_half_vars, aes(x=PC1, y=PC2, label=species), size = 3,color="black",direction = "y")+ # label arrows
   xlim(-5.5,5.5)+ylim(-7.0,7.0)+ #square plot area for symmetry and unbiased interpretation
   theme_bw()
-
-# fviz_pca_biplot(week_two_microcosm_PCA,
-#                 col.var = "black",
-#                 label = "var",
-#                 alpha.ind = 0.1,#make these points invisible to have diff shapes for points
-#                 labelsize = 2,
-#                 repel = TRUE,
-#                 geom_ind = "points",
-#                 col.ind = data_pooled_half$Temp_Regime,
-#                 palette = c("#00AFBB", "#E7B800", "#FC4E07", "#0073C2FF"),
-#                 mean.point = FALSE,
-#                 addEllipses = TRUE,
-#                 title = NULL,
-#                 ellipse.type = "confidence",
-#                 legend.title = "Temperature treatment",
-#                 geom.ind = "point")+
-#   #add different shape points for long vs. short corridors (can't do this with fviz)
-#   geom_point(aes(shape = data_pooled_half$Corridor,
-#                  colour = data_pooled_half$Temp_Regime)) +
-#   scale_shape_manual(values = c(3,4,15,17,19,16))+
-#   theme(legend.position = "none",
-#         aspect.ratio = 1)+
-#   labs(x = "PC1", y = "PC2")
 
 ## ASSESS EFFECT OF TREATMENT ON INTERMEDIATE COMMUNITY COMPOSITION ##
 pooled_half_dist <- vegan::vegdist(data_pooled_half[,c(6:12)],method = "bray")
