@@ -71,6 +71,13 @@ vegan::adonis2(pooled_lastday_dist~data_pooled_lastday$Temp_Regime + data_pooled
 #by = "margin" is marginal effect of each predictor rather than additional effect that
 #predictor has over previous. Therefore order of predictors supplied to model irrelevant
 
+#PERMANOVA pairwise comparisons
+library(pairwiseAdonis)
+#last day
+pairwise.adonis(data_pooled_lastday[,c(6,8:12)], data_pooled_lastday$Temp_Regime)
+#half way
+pairwise.adonis(data_pooled_half[,c(6:12)], data_pooled_half$Temp_Regime)
+
 #!!!DEFINING `TYPE` AS CENTROID/MEDIAN ALTERS INTERPRETATION!!!# Needs discussing - decided to stick with centroid
 vegan::permutest(vegan::betadisper(pooled_lastday_dist,data_pooled_lastday$Temp_Regime,type = "centroid"),pairwise = T) #compare variance of Temp_Regime groups 
 #PERMDIST with pairwise comparisons. permutest = vegan specific function with greater customisation
