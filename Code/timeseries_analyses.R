@@ -264,6 +264,28 @@ ggplot(gg.df_TEMP, aes(x =NumDays, y= Sh_div,group = Temp_Regime,
 
 
 
+###fit a model just with the significant interaction of CORRIDORS with time to 
+##plot the differences
+mod_corr<-glm(Sh_div~ splines::ns(NumDays,3)+Corridor + 
+               + splines::ns(NumDays,3):Corridor,
+             data =data_pooled, family = "gaussian")
+
+gg.df_Cor <- data.frame(preds = predict(mod_corr, newdata = data_pooled,type = "response" ),
+                         upr = predict(mod_corr, newdata = data_pooled ,se.fit = T,type = "response" )$fit +
+                           predict(mod_corr, newdata = data_pooled,se.fit = T,type = "response" )$se.fit ,
+                         lwr = predict(mod_corr, newdata = data_pooled ,se.fit = T ,type = "response")$fit -
+                           predict(mod_corr, newdata = data_pooled ,se.fit = T ,type = "response")$se.fit , 
+                         data_pooled)
+
+
+ggplot(gg.df_Cor, aes(x =NumDays, y= Sh_div,group = Corridor,
+                       col =Corridor, fill = Corridor))+
+  geom_point(alpha = 0.2)+
+  geom_line(aes(y=preds))+
+  geom_ribbon(aes(ymin = lwr,
+                  ymax = upr),colour="transparent", alpha=0.2)+
+  theme_bw()
+
 #----------------------------------------------------------------------------------------
 ## ANALYSIS of Shannon diversity VARIANCE THROUGH TIME ##
 #----------------------------------------------------------------------------------------
