@@ -3,6 +3,7 @@
 #########################################################################################
 
 ### Preamble ###
+library(ggh4x)
 library(tidyverse) # data wrangling and plotting
 library(ggpubr) # multi panel figures
 library(rstatix) # pipe-friendly model assumption tests
@@ -10,6 +11,45 @@ library(multcomp) # parametric model comparison functions
 library(lmtest) # model comparisons
 
 source("Code/data_preparation.R")
+
+
+#CODE FOR PLOTTING INDIVIDUAL SPECIES THROUGH TIME AT LANSCAPE AND PATCH LEVEL
+
+#pivot for obtaining the species variable for plotting
+data_pivot<-data_patches%>%
+  pivot_longer(cols = -c(Date, Replicate, Temp_Regime,
+                         Corridor,Patch, beta, NumDays),
+               names_to ="species",
+               values_to= "abundance")%>%
+  group_by(Temp_Regime, Corridor,Patch,Replicate)
+
+
+data_merged_corridors<-data_pivot %>% ungroup () %>% 
+  group_by(Date, Replicate, Temp_Regime,Patch, NumDays, species) %>% 
+  summarize(summed_abundance = sum(abundance))
+
+
+ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1), 
+                       colour = species, fill = species))+
+  geom_line(aes(linetype = (as.factor(Replicate))), size = 0.7)+
+  facet_nested(Corridor + Patch ~ Temp_Regime,scales = "fixed",
+               labeller = label_value,
+               strip = ggh4x::strip_nested(size="constant",bleed=T))+
+  theme_bw()
+
+ggsave("Log_species abundance patch and corridor_replicates.tiff", units="in", width=16, height=10)
+
+
+ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1), 
+                       colour = species, fill = species))+
+  geom_smooth(method = "loess",alpha = 0.15)+
+  facet_nested(Corridor + Patch ~ Temp_Regime,scales = "fixed",
+               labeller = label_value,
+               strip = ggh4x::strip_nested(size="constant",bleed=T))+
+  theme_bw()
+
+ggsave("Log_species abundance patch and corridor_smooth.tiff", units="in", width=16, height=10)
+
 
 #----------------------------------------------------------------------------------------
 ## ANALYSIS of SPECIES RICHNESS THROUGH TIME ##
