@@ -239,3 +239,5 @@ ggplot(df_interaction_fin,aes(x=NumDays,y=effect)) +
   ggrepel::geom_text_repel(data= rbind(data.frame(spp = names(summary_interaction1$sp),effect = summary_interaction1$sp*0.05, PC = "PC1"),
                                        data.frame(spp = names(summary_interaction2$sp),effect = summary_interaction2$sp*0.05, PC = "PC2")),
                            mapping=aes(x=30,y=effect,label=spp),hjust=-1, size=3, direction = "y",box.padding = 0.1,min.segment.length = 0.05,vjust = 0.55) 
+
+#end
