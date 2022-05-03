@@ -37,7 +37,7 @@ ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1),
                strip = ggh4x::strip_nested(size="constant",bleed=T))+
   theme_bw()
 
-ggsave("Log_species abundance patch and corridor_replicates.tiff", units="in", width=16, height=10)
+ggsave("Log_species abundance patch and corridor_replicates.pdf", units="in", width=16, height=10)
 
 
 ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1), 
@@ -48,7 +48,7 @@ ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1),
                strip = ggh4x::strip_nested(size="constant",bleed=T))+
   theme_bw()
 
-ggsave("Log_species abundance patch and corridor_smooth.tiff", units="in", width=16, height=10)
+ggsave("Log_species abundance patch and corridor_smooth.pdf", units="in", width=16, height=10)
 
 
 #----------------------------------------------------------------------------------------
@@ -245,11 +245,12 @@ ggplot(data_pooled, aes(x = Temp_Regime, y = Sh_div, col = Temp_Regime))+
 
 ###visually it does not look like we have a large difference between temperature regimes 
 # on average 
-##running an anova to check confirm that there is no significant difference
+##running an anova to check  that there is no significant difference
 aov_mod_SH_time1_SPLI_Simp2<-aov(Sh_div~
                                    Temp_Regime,
                                  data =data_pooled)
 summary(aov_mod_SH_time1_SPLI_Simp2)
+
 
 ##Likelihood Ratio Test to compare if our model selection is significant 
 lmtest::lrtest(mod_SH_time1_SPLI,mod_SH_time1_SPLI_Simp1)
