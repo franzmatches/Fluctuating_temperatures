@@ -115,23 +115,32 @@ pca_half_vars <- data.frame(PC1 = week_two_microcosm_PCA$rotation[,1]*5, #extrac
 pca_half.plot <- ggplot(pca_half_df, aes(x = PC1,y=PC2))  + 
   geom_vline(xintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
   geom_hline(yintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
-  #geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Long Corridors
-  #geom_point(aes(col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Short Corridors
-  geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3) + # points for Long Corridors
-  geom_point(aes(col=Temp_Regime),shape = 21,size = 3) + # points for Short Corridors
-  stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='t',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
-  #geom_point(aes(x = PC1.centroid, y= PC2.centroid,fill=Temp_Regime,col=Temp_Regime),shape = 8,size = 5) + # points for Temp_Regime centroids
-  #ggpubr::stat_chull(aes(fill=Temp_Regime,col=Temp_Regime), alpha = 0.1, 
-  #                   geom = "polygon")+ # Temp_Regime convex hulls
+  geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 1.5) + # points for Long Corridors
+  geom_point(aes(col=Temp_Regime),shape = 21,size = 1.5) + # points for Short Corridors
+  geom_point(aes(x = PC1.centroid, y= PC2.centroid,fill=Temp_Regime,col=Temp_Regime),shape = 8,size = 1.5) + # points for Temp_Regime centroids
+  ggpubr::stat_chull(aes(fill=Temp_Regime,col=Temp_Regime), alpha = 0.1, 
+                     geom = "polygon")+ # Temp_Regime convex hulls
   xlab("PC1 (26.6% var explained)") + ylab("PC2 (22.1% var explained)")+
   scale_alpha_manual(values = c(1,0),
                      guide = guide_legend(override.aes = list(alpha = 1,fill = c("black",NA))))+
   geom_segment(data = pca_half_vars,aes(x = 0, y= 0, xend = PC1,yend=PC2),
                arrow = arrow(length=unit(0.15,"cm")),alpha=0.7)+ # add species contribution arrows
-  #geom_text(data= pca_half_vars, aes(x=PC1, y=PC2, label=species), size = 3, vjust =1,color="black")+ # label arrows
-  ggrepel::geom_text_repel(data= pca_half_vars, aes(x=PC1, y=PC2, label=species), size = 3,color="black",direction = "y")+ # label arrows
+  geom_text(data= pca_half_vars, aes(x=PC1, y=PC2, label=species), 
+            size = 3,color="black",
+            hjust = c(-0.1, 0.8, -0.4, -0.2, 1, 0.8, 1), #specify positions for each label separately because they are still overlapping with ggrepel
+            vjust = c(1.5, 1.5, 1.3, 0.6, -0.3, 2, -0.4))+
   xlim(-5.5,5.5)+ylim(-7.0,7.0)+ #square plot area for symmetry and unbiased interpretation
-  theme_bw()
+  theme_classic()+
+  theme(legend.position = c(0.22, 0.75),
+        legend.key.size = unit(0.4, 'cm'),
+        legend.key.width = unit(0.4, 'cm'),
+        legend.key.height = unit(0.4, 'cm'),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7),
+        aspect.ratio = 1) +
+  labs(colour = "Temperature regime", fill = "Temperature regime", alpha = "Corridor length")+
+  scale_colour_manual(values = palette, labels = c("Constant", "Fluctuating asynchronous", "Fluctuating synchronous", "Static difference"))+
+  scale_fill_manual(values = palette, labels = c("Constant", "Fluctuating asynchronous", "Fluctuating synchronous", "Static difference"))
 
 ## ASSESS EFFECT OF TREATMENT ON INTERMEDIATE COMMUNITY COMPOSITION ##
 pooled_half_dist <- vegan::vegdist(data_pooled_half[,c(6:12)],method = "bray")
@@ -148,7 +157,8 @@ vegan::permutest(vegan::betadisper(pooled_half_dist,data_pooled_half$Corridor,ty
 
 #----------------------------------------------------------------------------------------
 ## Combined 14 and 28 day PCA ##
-ggpubr::ggarrange(pca_half.plot,pca_lastday.plot,nrow = 2,ncol = 1,common.legend = T, labels = c("a","b"))
+PCA_plots <- ggarrange(pca_half.plot, pca_lastday.plot, ncol = 1, align = "hv", labels = "auto", label.x = 0.25, label.y = 0.95)
+ggsave("PCA.tiff", PCA_plots, units = "in", width = 10, height = 10)
 #----------------------------------------------------------------------------------------
 
 #----------------------------------------------------------------------------------------
