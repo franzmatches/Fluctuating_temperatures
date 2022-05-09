@@ -45,23 +45,27 @@ palette <- c("#440154FF", "#3B528BFF","#21908CFF", "#5DC863FF")
 pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  + 
   geom_vline(xintercept = 0,linetype = "dashed",col="black",alpha=0.8)+ # lines denoting community space quadrants
   geom_hline(yintercept = 0,linetype = "dashed",col="black",alpha=0.8)+
-  # geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Long Corridors
-  # geom_point(aes(col=Temp_Regime),shape = 21,size = 3, position=position_jitter(0.8,seed=123)) + # points for Short Corridors
-  geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 3) + # points for Long Corridors
-  geom_point(aes(col=Temp_Regime),shape = 21,size = 3) + # points for Short Corridors
-  stat_ellipse(aes(fill=Temp_Regime,col=Temp_Regime), alpha=.2,type='t',size =0.3, geom="polygon",level = 0.95)+ # 95% multinormal ellipses 
-  #geom_point(aes(x = PC1.centroid, y= PC2.centroid,fill=Temp_Regime,col=Temp_Regime),shape = 8,size = 5) + # points for Temp_Regime centroids
-  #ggpubr::stat_chull(aes(fill=Temp_Regime,col=Temp_Regime), alpha = 0.1, 
-  #                   geom = "polygon")+ # Temp_Regime convex hulls
+  geom_point(aes(alpha = Corridor,fill=Temp_Regime,col=Temp_Regime),shape = 21,size = 1.5) + # points for Long Corridors
+  geom_point(aes(col=Temp_Regime),shape = 21,size = 1.5) + # points for Short Corridors
+  geom_point(aes(x = PC1.centroid, y= PC2.centroid,fill=Temp_Regime,col=Temp_Regime),shape = 8,size = 1.5) + # points for Temp_Regime centroids
+  ggpubr::stat_chull(aes(fill=Temp_Regime,col=Temp_Regime), alpha = 0.1, 
+                     geom = "polygon")+ # Temp_Regime convex hulls
   xlab("PC1 (34.7% var explained)") + ylab("PC2 (19.1% var explained)")+
   scale_alpha_manual(values = c(1,0),
                      guide = guide_legend(override.aes = list(alpha = 1,fill = c("black",NA))))+ # legend customisation of Long vs Short corridors
   geom_segment(data = pca_lastday_vars,aes(x = 0, y= 0, xend = PC1,yend=PC2),
                arrow = arrow(length=unit(0.15,"cm")),alpha=0.7)+ # add species contribution arrows
-  #geom_text(data= pca_lastday_vars, aes(x=PC1, y=PC2, label=species), size = 3, vjust =1,color="black")+ # label arrows
-  ggrepel::geom_text_repel(data= pca_lastday_vars, aes(x=PC1, y=PC2, label=species), size = 3,color="black",direction = "y")+ # label arrows and ensure minimal overlap in text
+  geom_text(data= pca_lastday_vars, aes(x=PC1, y=PC2, label=species), 
+            size = 3,color="black",
+            hjust = c(-0.1, -0.5, 0.2, 1.3, 1.2, 1), #specify positions for each label separately because they are still overlapping with ggrepel
+            vjust = c(1, 0.5, 2, 1, -1.2, 2))+
   xlim(-6.5,6.5)+ylim(-5,5)+ #symmetrical plot area for unbiased interpretation
-  theme_bw()
+  theme_classic() +
+  theme(legend.position = "none",
+        aspect.ratio = 1) +
+  labs(colour = "Temperature regime", fill = "Temperature regime", alpha = "Corridor length")+
+  scale_colour_manual(values = palette, labels = c("Constant", "Fluctuating asynchronous", "Fluctuating synchronous", "Static difference"))+
+  scale_fill_manual(values = palette, labels = c("Constant", "Fluctuating asynchronous", "Fluctuating synchronous", "Static difference"))
 
 ## ASSESS EFFECT OF TREATMENT ON FINAL COMMUNITY COMPOSITION ##
 pooled_lastday_dist <- vegan::vegdist(data_pooled_lastday[,c(6:12)],method = "bray") #estimate bray-curtis dissimilarity due high proportion of zeroes
