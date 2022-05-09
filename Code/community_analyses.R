@@ -39,6 +39,8 @@ pca_lastday_vars <- data.frame(PC1 = week_four_microcosm_PCA$rotation[,1]*5, #ex
                                PC2 =  week_four_microcosm_PCA$rotation[,2]*5,
                                species = rownames(week_four_microcosm_PCA$rotation)) # label contributions with associated species
 
+palette <- c("#440154FF", "#3B528BFF","#21908CFF", "#5DC863FF")
+
 #recreate fviz_pca_biplot as raw ggplot. Options provided for either 95% multinormal ellipses or convex hull
 pca_lastday.plot <- ggplot(pca_lastday_df, aes(x = PC1,y=PC2))  + 
   geom_vline(xintercept = 0,linetype = "dashed",col="black",alpha=0.8)+ # lines denoting community space quadrants
