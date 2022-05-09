@@ -60,6 +60,8 @@ ggplot(data_pooled_lastday, aes( x = Temp_Regime, y = Sp_rich, col = Temp_Regime
 #### ANALYSIS of Shannon Diversity ####
 #----------------------------------------------------------------------------------------
 
+palette <- c("#440154FF", "#3B528BFF","#21908CFF", "#5DC863FF")
+
 ##checking normality assumptions to run the two way anova
 #Build the linear model#Create a QQ plot of residuals
 lm2<-lm(Sh_div~ Corridor*Temp_Regime,
@@ -101,12 +103,18 @@ ggplot(data_pooled_lastday, aes( x = Temp_Regime, y = Sh_div, col = Temp_Regime)
   theme_bw()
 
 ##all together
+shannon_end <-
 ggplot(data_pooled_lastday, aes( x = Temp_Regime, y = Sh_div, col = Temp_Regime))+
   geom_boxplot()+
-  ggtitle("Shannon diversity last day")+
-  theme_bw()
-
-
+  xlab("Temperature regime") +
+  ylab("Shannon diversity") +
+  theme_classic() +
+  theme(legend.position = "none",
+        aspect.ratio = 1,
+        axis.text.x = element_text(size = 8)) +
+  scale_colour_manual(values= palette) +
+  scale_x_discrete(labels = c("Constant", "Fluctuating \n asynchronous",
+                              "Fluctuating \n synchronous", "Static difference"))
 #----------------------------------------------------------------------------------------
 ## ANALYSIS OF BETA DIVERSITY BETWEEN THE TWO PATCHES ##
 #----------------------------------------------------------------------------------------
@@ -153,7 +161,20 @@ ggplot(data_patches_lastday, aes( x = Temp_Regime, y = beta, col = Temp_Regime))
   ggtitle("Beta diversity between two patches LAST DAY")+
   theme_bw()
 
+beta_end <- 
 ggplot(data_patches_lastday, aes( x = Temp_Regime, y = beta, col = Temp_Regime))+
   geom_boxplot()+
-  ggtitle("Beta diversity between two patches LAST DAY")+
-  theme_bw()
+  xlab("Temperature regime") +
+  ylab("Beta diversity") +
+  #  labs(colour = "Temperature regime") +  
+  theme_classic()+
+  theme(legend.position = "none",
+        aspect.ratio = 1,
+        axis.text.x = element_text(size = 8)) +
+  scale_colour_manual(values= palette) +
+  scale_x_discrete(labels = c("Constant", "Fluctuating \n asynchronous",
+                              "Fluctuating \n synchronous", "Static difference"))  
+
+end_plots <- ggarrange(shannon_end, beta_end, align = "hv", labels = "auto", label.x = 0.08, label.y = 0.71)
+
+ggsave("end_plots.tiff", end_plots)
