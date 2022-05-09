@@ -39,16 +39,30 @@ ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1),
 
 ggsave("Log_species abundance patch and corridor_replicates.pdf", units="in", width=16, height=10)
 
+#facet labels
+temp_labs <- c("Constant", "Fluctuating\nasynchronous", "Fluctuating\nsynchronous", "Static difference")
+names(temp_labs) <- c("Constant", "Fluctuating_Asynchro", "Fluctuating_Synchro", "Static_Diff")
 
+abundance_plot <- 
 ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1), 
                        colour = species, fill = species))+
   geom_smooth(method = "loess",alpha = 0.15)+
   facet_nested(Corridor + Patch ~ Temp_Regime,scales = "fixed",
-               labeller = label_value,
-               strip = ggh4x::strip_nested(size="constant",bleed=T))+
-  theme_bw()
+               strip = ggh4x::strip_nested(size="constant",bleed=T),
+               labeller = ggplot2::labeller(Temp_Regime = temp_labs))+
+  xlab("Time (days)")+
+  ylab("Log abundance")+
+  labs(colour = "Species", fill = "Species") +
+  theme_classic()+
+  theme(strip.background = element_rect(colour = "black", fill = "white", linetype = "blank"),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(fill = NA, colour = "black"))+
+  scale_colour_viridis_d(labels = c("Blepharisma", "Bursaria", "Colpidium", "Didinium", "Homalozoon", "Paramecium", "Spirostomum"))+
+  scale_fill_viridis_d(labels = c("Blepharisma", "Bursaria", "Colpidium", "Didinium", "Homalozoon", "Paramecium", "Spirostomum"))
 
-ggsave("Log_species abundance patch and corridor_smooth.pdf", units="in", width=16, height=10)
+ggsave("abundance.tiff", abundance_plot, units = "in", width = 10, height = 10)
+
 
 
 #----------------------------------------------------------------------------------------
