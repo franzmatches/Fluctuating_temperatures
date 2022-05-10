@@ -10,5 +10,5 @@ Generated data, code and results from Wolfe E., Cerini F., Besson M., O’Brien 
 [*Results*](Results) - rendered manuscript figures.
 
 ## Funding
-This project was supported by NERC grants awarded to CF Clements ([**NE/T006579/1**], [**NE/T003502/1**](https://gtr.ukri.org/project/C57870FC-7D15-455D-BEB4-0122A44D9C43)).
+This project was supported by NERC grants awarded to CF Clements ([**NE/T006579/1**] (https://gtr.ukri.org/project/C57870FC-7D15-455D-BEB4-0122A44D9C43)) ([**NE/T003502/1**] (https://gtr.ukri.org/projects?ref=NE%2FT003502%2F1)).
 
