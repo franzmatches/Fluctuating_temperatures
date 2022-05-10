@@ -11,59 +11,7 @@ library(multcomp) # parametric model comparison functions
 library(lmtest) # model comparisons
 
 source("Code/data_preparation.R")
-
-
-#CODE FOR PLOTTING INDIVIDUAL SPECIES THROUGH TIME AT LANSCAPE AND PATCH LEVEL
-
-#pivot for obtaining the species variable for plotting
-data_pivot<-data_patches%>%
-  pivot_longer(cols = -c(Date, Replicate, Temp_Regime,
-                         Corridor,Patch, beta, NumDays),
-               names_to ="species",
-               values_to= "abundance")%>%
-  group_by(Temp_Regime, Corridor,Patch,Replicate)
-
-
-data_merged_corridors<-data_pivot %>% ungroup () %>% 
-  group_by(Date, Replicate, Temp_Regime,Patch, NumDays, species) %>% 
-  summarize(summed_abundance = sum(abundance))
-
-
-ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1), 
-                       colour = species, fill = species))+
-  geom_line(aes(linetype = (as.factor(Replicate))), size = 0.7)+
-  facet_nested(Corridor + Patch ~ Temp_Regime,scales = "fixed",
-               labeller = label_value,
-               strip = ggh4x::strip_nested(size="constant",bleed=T))+
-  theme_bw()
-
-ggsave("Log_species abundance patch and corridor_replicates.pdf", units="in", width=16, height=10)
-
-#facet labels
-temp_labs <- c("Constant", "Fluctuating\nasynchronous", "Fluctuating\nsynchronous", "Static difference")
-names(temp_labs) <- c("Constant", "Fluctuating_Asynchro", "Fluctuating_Synchro", "Static_Diff")
-
-abundance_plot <- 
-ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1), 
-                       colour = species, fill = species))+
-  geom_smooth(method = "loess",alpha = 0.15)+
-  facet_nested(Corridor + Patch ~ Temp_Regime,scales = "fixed",
-               strip = ggh4x::strip_nested(size="constant",bleed=T),
-               labeller = ggplot2::labeller(Temp_Regime = temp_labs))+
-  xlab("Time (days)")+
-  ylab("Log abundance")+
-  labs(colour = "Species", fill = "Species") +
-  theme_classic()+
-  theme(strip.background = element_rect(colour = "black", fill = "white", linetype = "blank"),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(fill = NA, colour = "black"))+
-  scale_colour_viridis_d(labels = c("Blepharisma", "Bursaria", "Colpidium", "Didinium", "Homalozoon", "Paramecium", "Spirostomum"))+
-  scale_fill_viridis_d(labels = c("Blepharisma", "Bursaria", "Colpidium", "Didinium", "Homalozoon", "Paramecium", "Spirostomum"))
-
-ggsave("abundance.tiff", abundance_plot, units = "in", width = 10, height = 10)
-
-
+palette <- c("#440154FF", "#3B528BFF","#21908CFF", "#5DC863FF") #colour paletter
 
 #----------------------------------------------------------------------------------------
 ## ANALYSIS of SPECIES RICHNESS THROUGH TIME ##
@@ -308,8 +256,7 @@ gg.df_TEMP <- data.frame(preds = predict(modTemp, newdata = data_pooled,type = "
                            predict(modTemp, newdata = data_pooled ,se.fit = T ,type = "response")$se.fit , 
                          data_pooled)
 
-temperature_time <- 
-ggplot(gg.df_TEMP, aes(x =NumDays, y= Sh_div,group = Temp_Regime,
+temperature_time <- ggplot(gg.df_TEMP, aes(x =NumDays, y= Sh_div,group = Temp_Regime,
                        col =Temp_Regime))+
   geom_point(alpha = 1, pch = 1)+
   geom_line(aes(y=preds))+
@@ -342,8 +289,7 @@ gg.df_Cor <- data.frame(preds = predict(mod_corr, newdata = data_pooled,type = "
                            predict(mod_corr, newdata = data_pooled ,se.fit = T ,type = "response")$se.fit , 
                          data_pooled)
 
-corridor_time <- 
-ggplot(gg.df_Cor, aes(x =NumDays, y= Sh_div,group = Corridor,
+corridor_time <- ggplot(gg.df_Cor, aes(x =NumDays, y= Sh_div,group = Corridor,
                        colour =Corridor))+
   geom_point(alpha = 1, pch = 1)+
   geom_line(aes(y=preds))+
@@ -362,7 +308,7 @@ ggplot(gg.df_Cor, aes(x =NumDays, y= Sh_div,group = Corridor,
 
 # Combine temperature and corridors time plots and export
 
-time_plots <- ggarrange(temperature_time, corridor_time, labels = "auto", label.x = 0.05, label.y = 0.72)
+time_plots <- ggpubr::ggarrange(temperature_time, corridor_time, labels = "auto", label.x = 0.05, label.y = 0.72)
 
 ggsave("time_plots.tiff", time_plots, units = "in", width = 10, height = 10)
 
