@@ -8,3 +8,6 @@ Generated data, code and results from Wolfe E., Cerini F., Besson M., O’Brien 
 [*Data*](Data) - raw protist abundances/presence-absences underpinning the above analyses.
 
 [*Results*](Results) - rendered manuscript figures.
+
+## Funding
+This project was supported by a NERC grant awarded to CF Clements ([**NE/T006579/1**](https://gtr.ukri.org/project/C57870FC-7D15-455D-BEB4-0122A44D9C43)).
