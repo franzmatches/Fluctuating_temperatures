@@ -44,7 +44,8 @@ data_patches<-data_raw%>%
   tidyr::nest() %>% #nest abundance columns to allow diversity metrics to be estimated for each Patch combination
   mutate(data = purrr::map(data, ~.x %>% dplyr::select(-Patch))) %>% #drop patches
   mutate(data = purrr::map(data, ~.x %>%
-                             mutate(beta = betapart::beta.multi.abund(.x)$beta.BRAY, # estimate Beta diversity
+                             mutate(beta = betapart::beta.multi.abund(.x)$beta.BRAY,# estimate Beta diversity
+                                    Sp_rich = vegan::specnumber(.x),#species richness
                                     Patch = c("A","B"))))%>% # reintroduce patches
   tidyr::unnest(cols = c(data))%>% # unnest
   dplyr::ungroup() %>%

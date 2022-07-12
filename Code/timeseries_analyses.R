@@ -13,6 +13,7 @@ library(MuMIn)
 source("Code/data_preparation.R")
 
 
+
 ###CODE FOR PLOTTING INDIVIDUAL SPECIES THROUGH TIME AT LANSCAPE AND PATCH LEVEL####
 
 #pivot for obtaining the species variable for plotting
@@ -49,6 +50,9 @@ ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1),
   theme_bw()
 
 ggsave("Log_species abundance patch and corridor_smooth.pdf", units="in", width=16, height=10)
+
+
+palette <- c("#440154FF", "#3B528BFF","#21908CFF", "#5DC863FF") #colour paletter
 
 
 #----------------------------------------------------------------------------------------
@@ -303,14 +307,23 @@ gg.df_TEMP <- data.frame(preds = predict(modTemp, newdata = data_pooled,type = "
                            predict(modTemp, newdata = data_pooled ,se.fit = T ,type = "response")$se.fit , 
                          data_pooled)
 
-
-ggplot(gg.df_TEMP, aes(x =NumDays, y= Sh_div,group = Temp_Regime,
-                       col =Temp_Regime, fill = Temp_Regime))+
-  geom_point(alpha = 0.2)+
+temperature_time <- ggplot(gg.df_TEMP, aes(x =NumDays, y= Sh_div,group = Temp_Regime,
+                       col =Temp_Regime))+
+  geom_point(alpha = 1, pch = 1)+
   geom_line(aes(y=preds))+
   geom_ribbon(aes(ymin = lwr,
-                  ymax = upr),colour="transparent", alpha=0.2)+
-  theme_bw()
+                  ymax = upr),colour = NA, alpha=0.1)+
+  xlab("Time (Days)") +
+  ylab("Shannon diversity") +
+  labs(colour = "Temperature regime", fill = "Temperature regime") +  
+  theme_classic()+
+  theme(legend.position = "top",
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7),
+        aspect.ratio = 1) +
+  scale_colour_manual(values= palette,
+                      labels = c("Constant", "Fluctuating\nasynchronous",
+                                 "Fluctuating\nsynchronous", "Static\ndifference"))  
 
 
 
@@ -327,14 +340,28 @@ gg.df_Cor <- data.frame(preds = predict(mod_corr, newdata = data_pooled,type = "
                            predict(mod_corr, newdata = data_pooled ,se.fit = T ,type = "response")$se.fit , 
                          data_pooled)
 
-
-ggplot(gg.df_Cor, aes(x =NumDays, y= Sh_div,group = Corridor,
-                       col =Corridor, fill = Corridor))+
-  geom_point(alpha = 0.2)+
+corridor_time <- ggplot(gg.df_Cor, aes(x =NumDays, y= Sh_div,group = Corridor,
+                       colour =Corridor))+
+  geom_point(alpha = 1, pch = 1)+
   geom_line(aes(y=preds))+
   geom_ribbon(aes(ymin = lwr,
-                  ymax = upr),colour="transparent", alpha=0.2)+
-  theme_bw()
+                  ymax = upr,
+                  group = Corridor),colour = NA, alpha=0.1)+
+  xlab("Time (Days)") +
+  ylab("Shannon diversity") +
+  labs(colour = "Corridor length", fill = "Corridor length") +
+  theme_classic()+
+  theme(legend.position = "top",
+        aspect.ratio = 1,
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7)) +
+  scale_colour_manual(values = c("#3B528BFF", "#C7E020FF"))  
+
+# Combine temperature and corridors time plots and export
+
+time_plots <- ggpubr::ggarrange(temperature_time, corridor_time, labels = "auto", label.x = 0.05, label.y = 0.72)
+
+ggsave("time_plots.tiff", time_plots, units = "in", width = 10, height = 10)
 
 #----------------------------------------------------------------------------------------
 ## ANALYSIS of Shannon diversity VARIANCE THROUGH TIME ##
