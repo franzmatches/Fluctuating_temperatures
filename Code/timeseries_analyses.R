@@ -9,11 +9,11 @@ library(ggpubr) # multi panel figures
 library(rstatix) # pipe-friendly model assumption tests
 library(multcomp) # parametric model comparison functions
 library(lmtest) # model comparisons
-
+library(MuMIn)
 source("Code/data_preparation.R")
 
 
-#CODE FOR PLOTTING INDIVIDUAL SPECIES THROUGH TIME AT LANSCAPE AND PATCH LEVEL
+###CODE FOR PLOTTING INDIVIDUAL SPECIES THROUGH TIME AT LANSCAPE AND PATCH LEVEL####
 
 #pivot for obtaining the species variable for plotting
 data_pivot<-data_patches%>%
@@ -252,9 +252,18 @@ aov_mod_SH_time1_SPLI_Simp2<-aov(Sh_div~
 summary(aov_mod_SH_time1_SPLI_Simp2)
 
 
-##Likelihood Ratio Test to compare if our model selection is significant 
-lmtest::lrtest(mod_SH_time1_SPLI,mod_SH_time1_SPLI_Simp1)
-lmtest::lrtest(mod_SH_time1_SPLI_Simp1,mod_SH_time1_SPLI_Simp2)
+##AICc model selection and table 
+
+AICc(mod_SH_time1_SPLI,mod_SH_time1_SPLI_Simp1,
+     mod_SH_time1_SPLI_Simp2)
+
+AIC_tab_set <- AICc(mod_SH_time1_SPLI,mod_SH_time1_SPLI_Simp1,
+                    mod_SH_time1_SPLI_Simp2)%>%
+  tibble::rownames_to_column(var= "Model")%>% #compare AICs across models
+  mutate(deltaAIC = AICc - min(AICc))%>%
+  ungroup()%>%
+  mutate(across(-Model,~round(.x,digits = 3)))%>%
+  arrange(AICc) #indicates model4 (within 2 AIC units and lowest df)
 
 ##predict values from the model and plot it, to see the fit of the model to real data
 gg.df_noint <- data.frame(preds = predict(mod_SH_time1_SPLI_Simp2, newdata = data_pooled,type = "response" ),
