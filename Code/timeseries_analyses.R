@@ -267,7 +267,7 @@ AIC_tab_set <- AICc(mod_SH_time1_SPLI,mod_SH_time1_SPLI_Simp1,
   mutate(deltaAIC = AICc - min(AICc))%>%
   ungroup()%>%
   mutate(across(-Model,~round(.x,digits = 3)))%>%
-  arrange(AICc) #indicates model4 (within 2 AIC units and lowest df)
+  arrange(AICc) #indicates model4 (within 2 AIC units and lowest df)#
 
 ##predict values from the model and plot it, to see the fit of the model to real data
 gg.df_noint <- data.frame(preds = predict(mod_SH_time1_SPLI_Simp2, newdata = data_pooled,type = "response" ),
