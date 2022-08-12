@@ -21,5 +21,6 @@ wilcox.test(N_individuals_2h ~ Corridor,data = data %>% filter(Species == "Colpi
 ggplot(data, aes (x = Corridor, y = N_individuals_2h, color = Species))+
   geom_boxplot()+
   facet_wrap(~Species, scales = "free")+
-  theme_bw()
+  theme_bw()+
+  ggtitle("Prey species")
 ggsave("dispersal_boxplots.pdf", units = "in", width = 10, height = 10)
