@@ -9,7 +9,7 @@ library(ggplot2)
 library(data.table)
 library(lme4)
 
-
+####PREY SPECIES####
 #load data
 data<-read.xlsx("Data/Dispersal_experiments_data.xlsx", sheet = "Prey_species", colNames = T)
 
@@ -142,22 +142,25 @@ ggsave("Spir.teres.pdf", units = "in", width = 10, height = 10)
 
   
   
-  
-#bootstrap
-#create a datatable to contain the bootstrapped data and the difference between them
-  
-bootstrap.samples = data.table(bootstrap_id = as.integer(),
-                               Species = as.character(),
-                               Corridor = as.character(),
-                               N_individuals_2h_resampled = as.integer())
-for(i in 1:1000){
-  bootstrap.samples_current = dataDT_resampled = dataDT[
-    , list(bootstrap_id = i, N_individuals_2h_resampled = sample(x = N_individuals_2h, size = 5, replace = TRUE))
-    , c("Species","Corridor")
-  ]
-  bootstrap.samples = rbind(bootstrap.samples, bootstrap.samples_current)
-}
+#   
+# #bootstrap
+# #create a datatable to contain the bootstrapped data and the difference between them
+#   
+# bootstrap.samples = data.table(bootstrap_id = as.integer(),
+#                                Species = as.character(),
+#                                Corridor = as.character(),
+#                                N_individuals_2h_resampled = as.integer())
+# for(i in 1:1000){
+#   bootstrap.samples_current = dataDT_resampled = dataDT[
+#     , list(bootstrap_id = i, N_individuals_2h_resampled = sample(x = N_individuals_2h, size = 5, replace = TRUE))
+#     , c("Species","Corridor")
+#   ]
+#   bootstrap.samples = rbind(bootstrap.samples, bootstrap.samples_current)
+# }
 
 
 
 
+
+
+####PREDATOR SPECIES####
