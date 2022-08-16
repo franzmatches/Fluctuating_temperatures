@@ -2,18 +2,26 @@
 ### DISPERSAL TEST LONG VS SHORT CORRIDORS #####
 #########################################################################################
 
-#preable
+#preamble
 library(openxlsx)
-library(tidyverse) # data wrangling and plotting
+library(tidyverse) 
 library(ggplot2)
 library(data.table)
 library(lme4)
+library(ggpubr)
 
 ####PREY SPECIES####
 #load data
 data<-read.xlsx("Data/Dispersal_experiments_data.xlsx", sheet = "Prey_species", colNames = T)
 
-#perform Mann-Whitney-Wilcoxon Test
+#pivot data to display the mean value for each species and corridor length,
+#and the value of the difference between the two
+data_pivot<-data %>% group_by(Species, Corridor) %>%
+  summarise(avg = mean(N_individuals_2h)) %>% ungroup() %>% group_by(Species) %>% 
+  pivot_wider(names_from = Corridor, values_from = avg) %>% 
+  mutate(difference_in_average = Short - Long)
+
+#perform Mann-Whitney-Wilcoxon Tests
 wilcox.test(N_individuals_2h ~ Corridor,data = data %>% filter(Species == "P.caudatum"))
 wilcox.test(N_individuals_2h ~ Corridor,data = data %>% filter(Species == "B.japonicum"))
 wilcox.test(N_individuals_2h ~ Corridor,data = data %>% filter(Species == "S.teres"))
@@ -28,15 +36,11 @@ ggplot(data, aes (x = Corridor, y = N_individuals_2h, color = Species))+
 ggsave("dispersal_boxplots.pdf", units = "in", width = 10, height = 10)
 
 
-###bootstrapping method
+###Bootstrapping
+#put the data in Data.table format
 dataDT<-as.data.table(data)
 
-data_pivot<-data %>% group_by(Species, Corridor) %>%
-  summarise(avg = mean(N_individuals_2h)) %>% ungroup() %>% group_by(Species) %>% 
-  pivot_wider(names_from = Corridor, values_from = avg) %>% 
-  mutate(difference_in_average = Short - Long)
  
-
 #create an empty dataset to fill with bootstrap permutations (using data.table)
 difference.bootstrapped = data.table(Species = as.character(),
                                      N_individuals_short = as.numeric(),
@@ -44,9 +48,9 @@ difference.bootstrapped = data.table(Species = as.character(),
                                      diff_N_individuals = as.numeric())
 
 
-#for loop to perform 1000 permutation bootstrapping: re sampling the data 1000 times and the calculate the mean of 
-#dispersed individual in the simulated re sampling of the 5 replicates, for both long and short corridor
-#and calculateadd a column where we calculate the difference between the means of short and long corridors 
+#for loop to perform 1000 permutation bootstrapping: re sampling the data 1000 times and then calculate the mean of 
+#dispersed individual in the simulated re sampling of the 5 replicates, for both long and short corridor,
+#and add a column where we calculate the difference between the means of short and long corridors 
 
 for(i in 1:1000){
   dataDT_resampled = dataDT[
@@ -72,7 +76,7 @@ quantile(difference.bootstrapped[Species == "B.japonicum"]$diff_N_individuals, c
 quantile(difference.bootstrapped[Species == "S.teres"]$diff_N_individuals, c(0.025,0.975))
 
 
-
+#plot histograms of the bootstrapping simulated differences between long and short corridor for each species
 p_p.caudatum<-ggplot(difference.bootstrapped %>% filter(Species == "P.caudatum"),
                      aes(x = diff_N_individuals))+
   geom_histogram(colour="black", fill="white")+
@@ -85,7 +89,7 @@ p_p.caudatum<-ggplot(difference.bootstrapped %>% filter(Species == "P.caudatum")
              color = "red")+
   labs(title = "P.caudatum")+
   xlim(-25,60)+
-  theme_bw()
+  theme_bw(base_size = 20)
 
 ggsave("p_p.caudatum.pdf", units = "in", width = 10, height = 10)
 
@@ -102,7 +106,7 @@ p_B.jap<-ggplot(difference.bootstrapped %>% filter(Species == "B.japonicum"),
              color = "red")+
   xlim(-25,60)+
   labs(title = "B.japonicum")+
-  theme_bw()
+  theme_bw(base_size = 20)
 
 ggsave("B.japonicum.pdf", units = "in", width = 10, height = 10)
 
@@ -118,8 +122,8 @@ p_Colp<-ggplot(difference.bootstrapped %>% filter(Species == "Colpidium"),
   geom_vline(aes(xintercept = 21.4),
              color = "red")+
   xlim(-25,60)+
-  labs(title = "Colpidium")+
-  theme_bw()
+  labs(title = "C.striatum")+
+  theme_bw(base_size = 20)
 
 ggsave("Colpidium.pdf", units = "in", width = 10, height = 10)
 
@@ -136,15 +140,80 @@ p_Spir<-ggplot(difference.bootstrapped %>% filter(Species == "S.teres"),
              color = "red")+
   xlim(-25,60)+
   labs(title = "S.teres")+
-  theme_bw()
+  theme_bw(base_size = 20)
 
-ggsave("Spir.teres.pdf", units = "in", width = 10, height = 10)
+ggsave("S. teres.pdf", units = "in", width = 10, height = 10)
 
   
+####PREDATOR SPECIES####
+#load data
+data<-read.xlsx("Data/Dispersal_experiments_data.xlsx", sheet = "Predator_species", colNames = T)
+
+#perform Mann-Whitney-Wilcoxon Test
+wilcox.test(N_individuals_4h ~ Corridor,data = data)
+
+#pivot data to display the mean value for each species and corridor length,
+#and the value of the difference between the two
+data_pivot<-data %>% group_by(Species, Corridor) %>%
+  summarise(avg = mean(N_individuals_4h)) %>% ungroup() %>% group_by(Species) %>% 
+  pivot_wider(names_from = Corridor, values_from = avg) %>% 
+  mutate(difference_in_average = Short - Long)
+
+#put the data in Data.table format
+dataDT<-as.data.table(data)
+
+#create an empty dataset to fill with bootstrap permutations (using data.table)
+difference.bootstrapped = data.table(Species = as.character(),
+                                     N_individuals_short = as.numeric(),
+                                     N_individuals_long = as.numeric(),
+                                     diff_N_individuals = as.numeric())
+#for loop to perform 1000 permutation bootstrapping: re sampling the data 1000 times and then calculate the mean of 
+#dispersed individual in the simulated re sampling of the 5 replicates, for both long and short corridor,
+#and add a column where we calculate the difference between the means of short and long corridors  
+
+for(i in 1:1000){
+  dataDT_resampled = dataDT[
+    , list(N_individuals_4h_resampled = sample(x = N_individuals_4h, size = 5, replace = TRUE))
+    , c("Species","Corridor")
+  ]
   
+  difference.bootstrapped_current = merge(dataDT_resampled[Corridor == "Short",
+                                                           list(N_individuals_short = mean(N_individuals_4h_resampled)),
+                                                           c("Species")],
+                                          dataDT_resampled[Corridor == "Long",
+                                                           list(N_individuals_long = mean(N_individuals_4h_resampled)),
+                                                           c("Species")],
+                                          by = "Species")
+  
+  difference.bootstrapped_current[, diff_N_individuals := N_individuals_short - N_individuals_long]
+  difference.bootstrapped = rbind(difference.bootstrapped, difference.bootstrapped_current)
+}
+#calculate 95% confidence interval for the difference in the mean simulated dispersed individuals
+quantile(difference.bootstrapped[Species == "Didinium_nasutum"]$diff_N_individuals, c(0.025,0.975))
+
+#plot histograms of the bootstrapping simulated differences between long and short corridor 
+p_Didinium_nasutum<-ggplot(difference.bootstrapped %>% filter(Species == "Didinium_nasutum"),
+                     aes(x = diff_N_individuals))+
+  geom_histogram(colour="black", fill="white")+
+  geom_vline(data = data_pivot %>% filter(Species == "Didinium_nasutum"),
+             aes(xintercept = difference_in_average),
+             color="blue", linetype="dashed", size= 1)+
+  geom_vline(aes(xintercept = -2.0),
+             color = "red")+
+  geom_vline(aes(xintercept = 3.6),
+             color = "red")+
+  labs(title = "D.nasutum")+
+  theme_bw(base_size = 20)
+
+ggsave("p_Didinium_nasutum.pdf", units = "in", width = 10, height = 10)
+
+
+
+####end####
+
+
 #   
-# #bootstrap
-# #create a datatable to contain the bootstrapped data and the difference between them
+# alternative: create a datatable to contain the bootstrapped data and the difference between them
 #   
 # bootstrap.samples = data.table(bootstrap_id = as.integer(),
 #                                Species = as.character(),
@@ -157,10 +226,3 @@ ggsave("Spir.teres.pdf", units = "in", width = 10, height = 10)
 #   ]
 #   bootstrap.samples = rbind(bootstrap.samples, bootstrap.samples_current)
 # }
-
-
-
-
-
-
-####PREDATOR SPECIES####
