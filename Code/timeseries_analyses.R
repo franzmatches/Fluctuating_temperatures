@@ -363,6 +363,119 @@ time_plots <- ggpubr::ggarrange(temperature_time, corridor_time, labels = "auto"
 
 ggsave("time_plots.tiff", time_plots, units = "in", width = 10, height = 10)
 
+#-----------------------------------------------------------------------------------
+#model with random effects for replicate and accounting for temporal autocorrelation
+#-----------------------------------------------------------------------------------
+
+library(glmmTMB)
+#saturated model with 3-way interaction
+shannon_mod_1 <- glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Temp_Regime + Corridor + 
+                                    splines::ns(NumDays,3):Temp_Regime + splines::ns(NumDays,3):Corridor +
+                                    Temp_Regime:Corridor +
+                                    splines::ns(NumDays,3):Temp_Regime:Corridor +  
+                                    ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                                  data = data_pooled,family = "gaussian",REML=F)
+
+summary(shannon_mod_1)
+Anova(shannon_mod_1) #qualitatively same outcome as before, slightly more conservative p-values 
+
+#model simplification first by removing 3-way interaction
+shannon_mod_2 <- glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Temp_Regime + Corridor + 
+                                    splines::ns(NumDays,3):Temp_Regime + splines::ns(NumDays,3):Corridor +
+                                    Temp_Regime:Corridor +
+                                    ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                                  data = data_pooled,family = "gaussian",REML=F)
+
+summary(shannon_mod_2)
+Anova(shannon_mod_2)
+#compare AIC vals
+MuMIn::model.sel(shannon_mod_1, shannon_mod_2) #shannon_mod_2 lower AICc so continue simplifying
+
+#remove 2-way interaction between corridor and temp treatment as it looks like no effect
+shannon_mod_3 <- glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Temp_Regime + Corridor + 
+                                    splines::ns(NumDays,3):Temp_Regime + splines::ns(NumDays,3):Corridor +
+                                    ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                                  data = data_pooled,family = "gaussian",REML=F)
+
+summary(shannon_mod_3)
+Anova(shannon_mod_3) #sig interactions between time:corridor, time:temp 
+
+#compare AICc for all 3 models for AICc model selection table
+MuMIn::model.sel(shannon_mod_1, shannon_mod_2, shannon_mod_3)
+
+#compare the residuals of both models to check for autocorrelation
+acf(resid(mod_SH_time1_SPLI_Simp2))
+acf(resid(shannon_mod_3))
+
+###fit a model just with the significant interaction of CORRIDORS with time to 
+##plot the differences
+glmm_mod_corr<-glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Corridor + 
+                                  splines::ns(NumDays,3):Corridor +
+                                  ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                                data = data_pooled,family = "gaussian",REML=F)
+
+glmm_mod_corr_preds <- predict(glmm_mod_corr, newdata = data_pooled, re.form = NA, type = "response", se.fit = T)
+
+gg.df_Cor <- data.frame(data_pooled,
+                        preds = glmm_mod_corr_preds$fit,
+                        upr = glmm_mod_corr_preds$fit + glmm_mod_corr_preds$se.fit,
+                        lwr = glmm_mod_corr_preds$fit - glmm_mod_corr_preds$se.fit)
+
+corridor_time <- ggplot(gg.df_Cor, aes(x =NumDays, y= Sh_div,group = Corridor,
+                                       colour =Corridor))+
+  geom_point(alpha = 1, pch = 1)+
+  geom_line(aes(y=preds))+
+  geom_ribbon(aes(ymin = lwr,
+                  ymax = upr,
+                  group = Corridor),colour = NA, alpha=0.1)+
+  xlab("Time (days)") +
+  ylab("Landscape diversity") +
+  labs(colour = "Corridor length", fill = "Corridor length") +
+  theme_classic()+
+  theme(legend.position = "top",
+        aspect.ratio = 1,
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7)) +
+  scale_colour_manual(values = c("#3B528BFF", "#C7E020FF"))  
+
+###fit a model just with the significant interaction of temperature treatment with time to 
+##plot the differences
+glmm_mod_temp <-glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Temp_Regime + 
+                                   splines::ns(NumDays,3):Temp_Regime +
+                                   ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                                 data = data_pooled,family = "gaussian",REML=F)
+
+glmm_mod_temp_preds <- predict(glmm_mod_temp, newdata = data_pooled, re.form = NA, type = "response", se.fit = T)
+
+gg.df_temp <- data.frame(data_pooled,
+                         preds = glmm_mod_temp_preds$fit,
+                         upr = glmm_mod_temp_preds$fit + glmm_mod_temp_preds$se.fit,
+                         lwr = glmm_mod_temp_preds$fit - glmm_mod_temp_preds$se.fit)
+
+temperature_time <- ggplot(gg.df_temp, aes(x =NumDays, y= Sh_div,group = Temp_Regime,
+                                           col =Temp_Regime))+
+  geom_point(alpha = 1, pch = 1)+
+  geom_line(aes(y=preds))+
+  geom_ribbon(aes(ymin = lwr,
+                  ymax = upr),colour = NA, alpha=0.1)+
+  xlab("Time (days)") +
+  ylab("Landscape diversity") +
+  labs(colour = "Temperature regime", fill = "Temperature regime") +  
+  theme_classic()+
+  theme(legend.position = "top",
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7),
+        aspect.ratio = 1) +
+  scale_colour_manual(values= palette,
+                      labels = c("Constant", "Fluctuating\nasynchronous",
+                                 "Fluctuating\nsynchronous", "Static\ndifference")) 
+
+#combine the new plots and export
+
+time_plots <- ggpubr::ggarrange(temperature_time, corridor_time, labels = "auto", label.x = 0.05, label.y = 0.72)
+
+ggsave("time_plots.tiff", time_plots, units = "in", width = 10, height = 10)
+
 #----------------------------------------------------------------------------------------
 ## ANALYSIS of Shannon diversity VARIANCE THROUGH TIME ##
 #----------------------------------------------------------------------------------------
