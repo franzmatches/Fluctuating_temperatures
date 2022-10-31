@@ -12,8 +12,6 @@ library(lmtest) # model comparisons
 library(MuMIn)
 source("Code/data_preparation.R")
 
-
-
 ###CODE FOR PLOTTING INDIVIDUAL SPECIES THROUGH TIME AT LANSCAPE AND PATCH LEVEL####
 
 #pivot for obtaining the species variable for plotting

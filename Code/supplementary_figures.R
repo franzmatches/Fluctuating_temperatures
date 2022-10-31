@@ -4,12 +4,14 @@
 library(ggh4x)
 library(tidyverse) # data wrangling and plotting
 library(dplyr)
-library(plotrix) #for calculating standard error
 
 source("Code/data_preparation.R")
-
 #----------------------------------------------------------------------------------------
 # Supplementary Figure 1
+#----------------------------------------------------------------------------------------
+source("Code/supplementary_figure1.R")
+#----------------------------------------------------------------------------------------
+# Supplementary Figure 2
 #----------------------------------------------------------------------------------------
 
 #pivot for obtaining the species variable for plotting
@@ -46,10 +48,10 @@ abundance_plot <- ggplot(data_pivot, aes(x = NumDays, y = log(abundance+1),
   scale_colour_viridis_d(labels = c("Blepharisma", "Bursaria", "Colpidium", "Didinium", "Homalozoon", "Paramecium", "Spirostomum"))+
   scale_fill_viridis_d(labels = c("Blepharisma", "Bursaria", "Colpidium", "Didinium", "Homalozoon", "Paramecium", "Spirostomum"))
 
-ggsave("Results/Supplementary_Figure1.tiff", abundance_plot, units = "in", width = 10, height = 10)
+ggsave("Results/Supplementary_Figure2.tiff", abundance_plot, units = "in", width = 10, height = 10)
 
 #----------------------------------------------------------------------------------------
-# Supplementary Figure 2 - alpha richness
+# Supplementary Figure 3 - alpha richness
 #----------------------------------------------------------------------------------------
 
 #group patches together to obtain average alpha richness 
@@ -61,7 +63,7 @@ data_average_alpha <- data_patches %>% ungroup () %>%
 data_alpha_plotting <- data_average_alpha %>% ungroup() %>%
   group_by(Temp_Regime, Corridor, NumDays) %>%
   dplyr :: summarise(mean_alpha = mean(average_alpha),
-                     se_alpha = std.error(average_alpha))
+                     se_alpha = sd(average_alpha)/sqrt(dplyr::n()))
 
 alpha_plot <- 
   ggplot(data_alpha_plotting, aes(x = NumDays, y = mean_alpha, group = Corridor, colour = Corridor))+
@@ -84,17 +86,17 @@ alpha_plot <-
         legend.position = "none",
         panel.border = element_rect(fill = NA, colour = "black"))
 
-ggsave("Results/Supplementary_Figure2.tiff", alpha_plot, units = "in", width = 10, height = 10)
+ggsave("Results/Supplementary_Figure3.tiff", alpha_plot, units = "in", width = 10, height = 10)
 
 #----------------------------------------------------------------------------------------
-# Supplementary Figure 3 - gamma richness
+# Supplementary Figure 4 - gamma richness
 #----------------------------------------------------------------------------------------
 
 #generate average alpha richness and SE, put into a new data frame for plotting
 data_gamma_plotting <- data_pooled %>% ungroup() %>%
   group_by(Temp_Regime, Corridor, NumDays) %>%
   dplyr :: summarise(mean_gamma = mean(Sp_rich),
-                     se_gamma = std.error(Sp_rich))
+                     se_gamma = sd(Sp_rich)/sqrt(dplyr::n()))
 
 gamma_plot <- 
   ggplot(data_gamma_plotting, aes(x = NumDays, y = mean_gamma, group = Corridor, colour = Corridor))+
@@ -117,5 +119,5 @@ gamma_plot <-
         legend.position = "none",
         panel.border = element_rect(fill = NA, colour = "black"))
 
-ggsave("Results/Supplementary_Figure3.tiff", gamma_plot, units = "in", width = 10, height = 10)
+ggsave("Results/Supplementary_Figure4.tiff", gamma_plot, units = "in", width = 10, height = 10)
 

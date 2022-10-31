@@ -8,15 +8,16 @@ source("Code/data_preparation.R")
 palette <- c("#440154FF", "#3B528BFF","#21908CFF", "#5DC863FF")
 
 ### Species diversity across temperature regimes model ###
-modTemp<-glm(Sh_div~ splines::ns(NumDays,3)+Temp_Regime + 
-               + splines::ns(NumDays,3):Temp_Regime,
-             data =data_pooled, family = "gaussian")
+modTemp <- glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Temp_Regime + 
+                            splines::ns(NumDays,3):Temp_Regime +
+                            ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                          data = data_pooled,family = "gaussian",REML=F)
 
-gg.df_TEMP <- data.frame(preds = predict(modTemp, newdata = data_pooled,type = "response" ),
-                         upr = predict(modTemp, newdata = data_pooled ,se.fit = T,type = "response" )$fit +
-                           predict(modTemp, newdata = data_pooled,se.fit = T,type = "response" )$se.fit ,
-                         lwr = predict(modTemp, newdata = data_pooled ,se.fit = T ,type = "response")$fit -
-                           predict(modTemp, newdata = data_pooled ,se.fit = T ,type = "response")$se.fit , 
+gg.df_TEMP <- data.frame(preds = predict(modTemp, newdata = data_pooled,type = "response",re.form = NA),
+                         upr = predict(modTemp, newdata = data_pooled ,se.fit = T,type = "response", re.form = NA)$fit +
+                           predict(modTemp, newdata = data_pooled,se.fit = T,type = "response", re.form = NA)$se.fit ,
+                         lwr = predict(modTemp, newdata = data_pooled ,se.fit = T ,type = "response", re.form = NA)$fit -
+                           predict(modTemp, newdata = data_pooled ,se.fit = T ,type = "response", re.form = NA)$se.fit , 
                          data_pooled)
 
 temperature_time <- ggplot(gg.df_TEMP, aes(x =NumDays, y= Sh_div,group = Temp_Regime,
@@ -38,17 +39,18 @@ temperature_time <- ggplot(gg.df_TEMP, aes(x =NumDays, y= Sh_div,group = Temp_Re
                                  "Fluctuating\nsynchronous", "Static\ndifference"))  
 
 
-
 ### Species diversity across corridor lengths model ###
-mod_corr<-glm(Sh_div~ splines::ns(NumDays,3)+Corridor + 
-                + splines::ns(NumDays,3):Corridor,
-              data =data_pooled, family = "gaussian")
+mod_corr<-glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Corridor + 
+                             splines::ns(NumDays,3):Corridor +
+                             ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                           data = data_pooled,family = "gaussian",REML=F)
 
-gg.df_Cor <- data.frame(preds = predict(mod_corr, newdata = data_pooled,type = "response" ),
-                        upr = predict(mod_corr, newdata = data_pooled ,se.fit = T,type = "response" )$fit +
-                          predict(mod_corr, newdata = data_pooled,se.fit = T,type = "response" )$se.fit ,
-                        lwr = predict(mod_corr, newdata = data_pooled ,se.fit = T ,type = "response")$fit -
-                          predict(mod_corr, newdata = data_pooled ,se.fit = T ,type = "response")$se.fit , 
+
+gg.df_Cor <- data.frame(preds = predict(mod_corr, newdata = data_pooled,type = "response", re.form = NA),
+                        upr = predict(mod_corr, newdata = data_pooled ,se.fit = T,type = "response", re.form = NA)$fit +
+                          predict(mod_corr, newdata = data_pooled,se.fit = T,type = "response", re.form = NA)$se.fit ,
+                        lwr = predict(mod_corr, newdata = data_pooled ,se.fit = T ,type = "response", re.form = NA)$fit -
+                          predict(mod_corr, newdata = data_pooled ,se.fit = T ,type = "response", re.form = NA)$se.fit , 
                         data_pooled)
 
 corridor_time <- ggplot(gg.df_Cor, aes(x =NumDays, y= Sh_div,group = Corridor,
@@ -67,7 +69,6 @@ corridor_time <- ggplot(gg.df_Cor, aes(x =NumDays, y= Sh_div,group = Corridor,
         legend.title = element_text(size = 7),
         legend.text = element_text(size = 7)) +
   scale_colour_manual(values = c("#3B528BFF", "#C7E020FF"))  
-
 
 
 ### Combine temperature and corridors time plots and export ###

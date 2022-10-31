@@ -7,7 +7,7 @@ library(tidyverse) # data wrangling and plotting
 source("Code/data_preparation.R")
 palette <- c("#440154FF", "#3B528BFF","#21908CFF", "#5DC863FF")
 
-colnames(data_pooled)[6:12] <- c("Blepharisma","Didinium","Colpidium","Homolazoon","Bursaria","Spirostomum","Paramecium") #rename species for downstream plotting
+colnames(data_pooled)[6:12] <- c("Blepharisma","Didinium","Colpidium","Homalozoon","Bursaria","Spirostomum","Paramecium") #rename species for downstream plotting
 data_pooled_lastday <- data_pooled %>%
   filter(NumDays ==max(NumDays)) #filter to last day of experiment
 
