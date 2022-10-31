@@ -405,6 +405,13 @@ MuMIn::model.sel(shannon_mod_1, shannon_mod_2, shannon_mod_3)
 acf(resid(mod_SH_time1_SPLI_Simp2))
 acf(resid(shannon_mod_3))
 
+pdf("/Users/ul20791/Downloads/model_residual_acf.pdf",width = 8, height = 4)
+par(mfrow = c(1, 2))
+plot(acf(resid(mod_SH_time1_SPLI_Simp2),plot = F),main = "a) GLM Residual Autocorrelation")
+plot(acf(resid(shannon_mod_3),plot = F),main = "b) GLMM Residual Autocorrelation")
+dev.off()
+par(mfrow = c(1, 1))
+
 ###fit a model just with the significant interaction of CORRIDORS with time to 
 ##plot the differences
 glmm_mod_corr<-glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Corridor + 
