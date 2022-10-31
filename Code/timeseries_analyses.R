@@ -402,10 +402,7 @@ Anova(shannon_mod_3) #sig interactions between time:corridor, time:temp
 MuMIn::model.sel(shannon_mod_1, shannon_mod_2, shannon_mod_3)
 
 #compare the residuals of both models to check for autocorrelation
-acf(resid(mod_SH_time1_SPLI_Simp2))
-acf(resid(shannon_mod_3))
-
-pdf("/Users/ul20791/Downloads/model_residual_acf.pdf",width = 8, height = 4)
+pdf("Results/model_residual_acf.pdf",width = 8, height = 4)
 par(mfrow = c(1, 2))
 plot(acf(resid(mod_SH_time1_SPLI_Simp2),plot = F),main = "a) GLM Residual Autocorrelation")
 plot(acf(resid(shannon_mod_3),plot = F),main = "b) GLMM Residual Autocorrelation")
