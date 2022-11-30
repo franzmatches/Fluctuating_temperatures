@@ -10,9 +10,8 @@ library(rstatix) # pipe-friendly model assumption tests
 library(multcomp) # parametric model comparison functions
 library(lmtest) # model comparisons
 library(MuMIn)
+library(ggeffects) # marginal effects extraction
 source("Code/data_preparation.R")
-
-
 
 ###CODE FOR PLOTTING INDIVIDUAL SPECIES THROUGH TIME AT LANSCAPE AND PATCH LEVEL####
 
@@ -359,6 +358,108 @@ corridor_time <- ggplot(gg.df_Cor, aes(x =NumDays, y= Sh_div,group = Corridor,
 
 # Combine temperature and corridors time plots and export
 
+time_plots <- ggpubr::ggarrange(temperature_time, corridor_time, labels = "auto", label.x = 0.05, label.y = 0.72)
+
+ggsave("time_plots.tiff", time_plots, units = "in", width = 10, height = 10)
+
+#-----------------------------------------------------------------------------------
+#model with random effects for replicate and accounting for temporal autocorrelation
+#-----------------------------------------------------------------------------------
+
+library(glmmTMB)
+#saturated model with 3-way interaction
+shannon_mod_1 <- glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Temp_Regime + Corridor + 
+                                    splines::ns(NumDays,3):Temp_Regime + splines::ns(NumDays,3):Corridor +
+                                    Temp_Regime:Corridor +
+                                    splines::ns(NumDays,3):Temp_Regime:Corridor +  
+                                    ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                                  data = data_pooled,family = "gaussian",REML=F)
+
+summary(shannon_mod_1)
+Anova(shannon_mod_1) #qualitatively same outcome as before, slightly more conservative p-values 
+
+#model simplification first by removing 3-way interaction
+shannon_mod_2 <- glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Temp_Regime + Corridor + 
+                                    splines::ns(NumDays,3):Temp_Regime + splines::ns(NumDays,3):Corridor +
+                                    Temp_Regime:Corridor +
+                                    ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                                  data = data_pooled,family = "gaussian",REML=F)
+
+summary(shannon_mod_2)
+Anova(shannon_mod_2)
+#compare AIC vals
+MuMIn::model.sel(shannon_mod_1, shannon_mod_2) #shannon_mod_2 lower AICc so continue simplifying
+
+#remove 2-way interaction between corridor and temp treatment as it looks like no effect
+shannon_mod_3 <- glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Temp_Regime + Corridor + 
+                                    splines::ns(NumDays,3):Temp_Regime + splines::ns(NumDays,3):Corridor +
+                                    ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                                  data = data_pooled,family = "gaussian",REML=F)
+
+summary(shannon_mod_3)
+Anova(shannon_mod_3) #sig interactions between time:corridor, time:temp 
+
+#compare AICc for all 3 models for AICc model selection table
+MuMIn::model.sel(shannon_mod_1, shannon_mod_2, shannon_mod_3)
+
+#compare the residuals of both models to check for autocorrelation
+pdf("Results/model_residual_acf.pdf",width = 8, height = 4)
+par(mfrow = c(1, 2))
+plot(acf(resid(mod_SH_time1_SPLI_Simp2),plot = F),main = "a) GLM Residual Autocorrelation")
+plot(acf(resid(shannon_mod_3),plot = F),main = "b) GLMM Residual Autocorrelation")
+dev.off()
+par(mfrow = c(1, 1))
+
+### Fit the final species diversity model
+shannon_mod_3 <- glmmTMB::glmmTMB(Sh_div~ splines::ns(NumDays,3) + Temp_Regime + Corridor + 
+                                    splines::ns(NumDays,3):Temp_Regime + splines::ns(NumDays,3):Corridor +
+                                    ar1(as.factor(NumDays) + 0 | Replicate) + (1|Replicate), 
+                                  data = data_pooled,family = "gaussian",REML=F)
+
+
+### Species diversity across temperature regimes model ###
+gg.df_Cor <- ggeffects::ggpredict(shannon_mod_3, c("NumDays[all]","Corridor[all]"))%>%
+  left_join(attr(ggeffects::ggpredict(shannon_mod_3, c("NumDays[all]","Corridor[all]")), "rawdata", exact = TRUE))
+
+temperature_time <- ggplot(gg.df_TEMP,aes(x=x,y=predicted,colour = group)) +  
+  geom_line()+
+  geom_ribbon(aes(ymin = conf.low,
+                  ymax = conf.high,group=group),colour = NA, fill = "grey20",alpha=0.1)+
+  geom_point(aes(y=response),alpha = 1, pch = 1)+
+  xlab("Time (days)") +
+  ylab("Landscape diversity") +
+  labs(colour = "Temperature regime", fill = "Temperature regime") +  
+  theme_classic()+
+  theme(legend.position = "top",
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7),
+        aspect.ratio = 1) +
+  scale_colour_manual(values= palette,
+                      labels = c("Constant", "Fluctuating\nasynchronous",
+                                 "Fluctuating\nsynchronous", "Static\ndifference")) 
+
+### Species diversity across corridor lengths model ###
+gg.df_TEMP <- ggeffects::ggpredict(shannon_mod_3, c("NumDays[all]", "Temp_Regime[all]")) %>%
+  left_join(attr(ggeffects::ggpredict(shannon_mod_3, c("NumDays[all]", "Temp_Regime[all]")), "rawdata", exact = TRUE))
+
+corridor_time <- ggplot(gg.df_Cor,aes(x=x,y=predicted,colour = group)) +  
+  geom_line()+
+  geom_ribbon(aes(ymin = conf.low,
+                  ymax = conf.high,group=group),colour = NA, fill = "grey20",alpha=0.1)+
+  geom_point(aes(y=response),alpha = 1, pch = 1)+
+  xlab("Time (days)") +
+  ylab("Landscape diversity") +
+  xlab("Time (days)") +
+  ylab("Landscape diversity") +
+  labs(colour = "Corridor length", fill = "Corridor length") +
+  theme_classic()+
+  theme(legend.position = "top",
+        aspect.ratio = 1,
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7)) +
+  scale_colour_manual(values = c("#3B528BFF", "#C7E020FF")) 
+
+### Combine temperature and corridors time plots and export ###
 time_plots <- ggpubr::ggarrange(temperature_time, corridor_time, labels = "auto", label.x = 0.05, label.y = 0.72)
 
 ggsave("time_plots.tiff", time_plots, units = "in", width = 10, height = 10)
